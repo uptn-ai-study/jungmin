@@ -1,0 +1,3 @@
+{
+  "rewrites": [{ "source": "/", "destination": "/crypto_wishing_well.html" }]
+}
