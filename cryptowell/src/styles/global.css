@@ -38,15 +38,14 @@ button { font-family: inherit; cursor: pointer; }
 ══════════════════════════════════ */
 #app {
   position: fixed;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 360px;
-  height: 711px;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
   display: flex; flex-direction: column;
   background: var(--app-bg);
-  box-shadow: 0 0 60px rgba(0,0,0,.15);
   overflow: hidden;
+  /* iOS 노치/홈바 safe area */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* ══════════════════════════════════
@@ -128,21 +127,22 @@ button { font-family: inherit; cursor: pointer; }
   min-height: 100%;
   display: flex; flex-direction: column;
   align-items: center;
-  /* 하단 고정 버튼(48px) + 상하 패딩(24px × 2) 만큼 여백 확보 */
-  padding: 20px 24px calc(48px + 48px);
+  /* 하단 CTA(48px) + 상하패딩(12px×2) + safe area */
+  padding: 20px 24px calc(48px + 24px + env(safe-area-inset-bottom, 0px));
   gap: 12px;
 }
 
 /* ══════════════════════════════════
    BOTTOM CTA  (고정 하단 버튼)
-   top 639 / left 24 / 312×48
+   하단 고정 버튼 — 화면 너비에 반응형
 ══════════════════════════════════ */
 .bottom-cta {
   position: absolute;
-  top: 639px;
-  left: 24px;
-  width: 312px;
-  height: 48px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--app-bg);
   z-index: 30;
 }
 
@@ -358,7 +358,7 @@ button { font-family: inherit; cursor: pointer; }
 .throw-btn {
   background: var(--primary); color: #fff;
   font-size: 16px; font-weight: 700; letter-spacing: -0.3px;
-  width: 100%; height: 100%;   /* 312 × 48 은 .bottom-cta 가 결정 */
+  width: 100%; height: 48px;
   border-radius: 12px;
   border: none;
   display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -399,7 +399,7 @@ button { font-family: inherit; cursor: pointer; }
    TALISMAN CARD
 ══════════════════════════════════ */
 .talisman-card {
-  width: 336px; height: 360px;
+  width: 100%; height: 360px;
   display: flex; flex-direction: column; align-items: center; justify-content: space-between;
   background: linear-gradient(165deg, #FFFAE8 0%, #F7E99A 50%, #EDD678 100%);
   border-radius: 20px; padding: 24px 20px 20px;
@@ -464,7 +464,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* ── 액션 버튼 (저장 / 공유) — 공통 gray 컴포넌트 ── */
-.action-row { display:flex; gap:8px; width:336px; }
+.action-row { display:flex; gap:8px; width:100%; }
 .act-btn {
   flex: 1;
   display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -492,7 +492,7 @@ button { font-family: inherit; cursor: pointer; }
 .result-cta {
   display: flex;
   gap: 10px;
-  width: 100%; height: 100%;
+  width: 100%; height: 48px;
 }
 
 /* UI kit .btn base */
@@ -573,7 +573,7 @@ button { font-family: inherit; cursor: pointer; }
   justify-content: center;
 }
 .bs-sheet {
-  width: 360px;
+  width: 100%;
   background: var(--card-bg);
   border-radius: 24px 24px 0 0;
   padding: 12px 12px 28px;
