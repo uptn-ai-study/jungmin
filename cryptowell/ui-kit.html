@@ -1,0 +1,668 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UPTNStation UI Kit</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sunn-us/SUIT/fonts/variable/SUIT-Variable.min.css"/>
+  <style>
+    :root {
+      --primary:       #5F46FF;
+      --primary-dark:  #4A35E0;
+      --primary-light: #EEEAFF;
+      --primary-200:   #F2F0FF;
+      --primary-dim:   rgba(95,70,255,0.10);
+      --app-bg:        #F4F3FF;
+      --card-bg:       #FFFFFF;
+      --muted-bg:      #F5F5F8;
+      --border:        #E5E7EB;
+      --text-1:        #111827;
+      --text-2:        #6B7280;
+      --text-3:        #9CA3AF;
+      --success:       #10B981;
+      --error:         #EF4444;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'SUIT Variable', 'SUIT', -apple-system, sans-serif;
+      background: #E8E8F0;
+      color: var(--text-1);
+      padding: 32px 20px 60px;
+    }
+    /* 섹션 레이아웃 */
+    .kit-section { max-width: 420px; margin: 0 auto 48px; }
+    .kit-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .12em;
+      color: #888; text-transform: uppercase;
+      border-bottom: 1px solid #D0D0E0; padding-bottom: 8px; margin-bottom: 20px;
+    }
+    .kit-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+    .kit-label {
+      font-size: 11px; color: #888; margin-bottom: 6px;
+      letter-spacing: -0.2px;
+    }
+    .kit-block { margin-bottom: 16px; }
+
+    /* ── APP FRAME ── */
+    .app-frame {
+      background: var(--app-bg);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,.15);
+    }
+
+    /* ── HEADER ── */
+    .app-header {
+      background: var(--card-bg);
+      height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-back { font-size: 20px; color: var(--text-1); background: none; border: none; cursor: pointer; padding: 4px; }
+    .header-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-icons { display: flex; gap: 16px; }
+    .header-icon  { font-size: 20px; color: var(--text-1); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      border: none; cursor: pointer;
+      font-family: inherit; font-weight: 700; letter-spacing: -0.3px;
+      transition: all .15s; display: inline-flex; align-items: center; justify-content: center;
+    }
+    .btn:active { transform: scale(.97); }
+
+    .btn-primary    { background: var(--primary); color: #fff; font-size: 16px; height: 56px; border-radius: 12px; width: 100%; }
+    .btn-primary:active { background: var(--primary-dark); }
+    .btn-primary-md { background: var(--primary); color: #fff; font-size: 15px; font-weight: 600; height: 48px; border-radius: 12px; flex: 1; }
+    /* secondary — Primary200(#F2F0FF) bg + Primary 텍스트 */
+    .btn-secondary  { background: var(--primary-200); color: var(--primary); font-size: 15px; font-weight: 700; height: 48px; border-radius: 12px; flex: 1; border: none; }
+    .btn-secondary:active { transform: scale(.97); }
+    .btn-outline    { background: var(--muted-bg); border: 1px solid var(--border); color: #374151; font-size: 14px; font-weight: 500; height: 40px; border-radius: 9999px; padding: 0 20px; }
+    .btn-text       { background: none; border: none; color: var(--primary); font-size: 15px; font-weight: 500; padding: 0 4px; font-family: inherit; cursor: pointer; }
+    .btn-disabled   { background: #E5E7EB; color: #9CA3AF; font-size: 16px; height: 56px; border-radius: 12px; width: 100%; cursor: not-allowed; }
+    /* gray — 사진저장/공유하기 등 보조 액션 */
+    .btn-gray       { background: var(--muted-bg); color: var(--text-2); border: 1px solid var(--border); font-size: 13px; font-weight: 600; height: 44px; border-radius: 12px; flex: 1; }
+    .btn-gray:active { transform: scale(.97); }
+    .btn-row        { display: flex; gap: 10px; }
+
+    /* ── INPUT ── */
+    .input-wrap { position: relative; }
+    .input-field {
+      background: var(--card-bg); border: 1.5px solid var(--border);
+      border-radius: 12px; height: 52px;
+      padding: 0 44px 0 16px;
+      font-size: 15px; font-weight: 400; color: var(--text-1);
+      width: 100%; outline: none;
+      font-family: 'SUIT Variable', sans-serif;
+    }
+    .input-field:focus { border: 2px solid var(--primary); }
+    .input-field::placeholder { color: var(--text-3); }
+    .input-clear {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #D1D5DB; color: #6B7280; font-size: 10px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; cursor: pointer;
+    }
+    .search-bar { display: flex; align-items: center; gap: 12px; }
+    .search-bar .input-wrap { flex: 1; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card-bg); border-radius: 16px;
+      padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .card-selected { border: 2px solid var(--primary); border-radius: 20px; }
+
+    /* ── BOTTOM SHEET ── */
+    .bs-overlay-demo {
+      position: relative; background: rgba(0,0,0,.45);
+      border-radius: 16px; overflow: hidden;
+      display: flex; align-items: flex-end; min-height: 260px;
+    }
+    .bottom-sheet-demo {
+      background: var(--card-bg); border-radius: 24px 24px 0 0;
+      padding: 12px 12px 28px;
+      box-shadow: 0 -4px 24px rgba(0,0,0,.10);
+      width: 100%;
+    }
+    .sheet-handle {
+      width: 36px; height: 4px; background: #E5E7EB;
+      border-radius: 2px; margin: 0 auto 16px;
+    }
+    .sheet-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 8px; margin-bottom: 16px;
+    }
+    .sheet-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+    .sheet-close {
+      background: var(--muted-bg); border: 1px solid var(--border);
+      border-radius: 50%; width: 30px; height: 30px;
+      font-size: 13px; color: var(--text-2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .info-row-card {
+      border: 1px solid var(--border); border-radius: 12px;
+      padding: 14px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .info-row-label { font-size: 14px; color: var(--text-2); }
+    .info-row-value { font-size: 14px; font-weight: 600; color: var(--text-1); display: flex; align-items: center; gap: 6px; }
+    .sheet-body { font-size: 14px; line-height: 22px; color: var(--text-1); margin-bottom: 20px; }
+    .sheet-link { color: var(--primary); }
+
+
+    /* ── UP ICON RULE ── */
+    .up-rule-box {
+      background: var(--primary-200); border-radius: 12px; padding: 16px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .up-rule-img { width: 40px; height: 40px; object-fit: contain; }
+    .up-rule-text { font-size: 13px; line-height: 1.6; color: var(--text-1); }
+    .up-rule-text b { color: var(--primary); }
+
+    /* ── TAB ── */
+    .tab-bar { display: flex; border-bottom: 1px solid #F3F4F6; background: var(--card-bg); }
+    .tab-item {
+      flex: 1; height: 48px; font-size: 16px; font-weight: 400; color: var(--text-3);
+      background: none; border: none; cursor: pointer; position: relative;
+      font-family: inherit; letter-spacing: -0.3px;
+    }
+    .tab-item.active { font-weight: 700; color: var(--text-1); }
+    .tab-item.active::after {
+      content: ''; position: absolute; bottom: 0; left: 10%; right: 10%;
+      height: 2px; background: var(--text-1); border-radius: 2px;
+    }
+
+    /* ── BADGE ── */
+    .badge { display: inline-flex; align-items: center; font-family: inherit; font-weight: 600; border: none; }
+    .badge-success { background: var(--success); color: #fff; font-size: 12px; padding: 3px 9px; border-radius: 6px; }
+    .badge-primary { background: var(--primary); color: #fff; font-size: 11px; padding: 3px 9px; border-radius: 6px; }
+    .badge-count   { background: rgba(0,0,0,0.35); color: #fff; font-size: 12px; padding: 3px 10px; border-radius: 9999px; }
+    .badge-error   { background: var(--error); color: #fff; font-size: 12px; padding: 3px 9px; border-radius: 6px; }
+
+    /* ── CHIP ── */
+    .chip { border: 1.5px solid var(--primary); color: var(--primary); font-size: 13px; font-weight: 500; border-radius: 9999px; padding: 6px 14px; background: transparent; cursor: pointer; font-family: inherit; }
+    .chip.active { background: var(--primary); color: #fff; }
+
+    /* ── ATTENDANCE OVAL ── */
+    .oval-wrap { display: flex; gap: 8px; }
+    .oval { border-radius: 9999px; padding: 14px 18px; text-align: center; min-width: 66px; font-family: inherit; }
+    .oval-active { background: linear-gradient(135deg, #A78BFF, #5F46FF); border: none; }
+    .oval-active .oval-label { font-size: 12px; font-weight: 700; color: #5F46FF; }
+    .oval-active .oval-num   { font-size: 22px; font-weight: 800; color: #5F46FF; }
+    .oval-active .oval-unit  { font-size: 11px; font-weight: 600; color: #5F46FF; }
+    .oval-inactive { background: transparent; border: 1.5px dashed #D1D5DB; }
+    .oval-inactive .oval-label { font-size: 12px; font-weight: 500; color: var(--text-3); }
+    .oval-inactive .oval-num   { font-size: 22px; font-weight: 700; color: var(--text-1); }
+    .oval-inactive .oval-unit  { font-size: 11px; color: var(--text-3); }
+
+    /* ── FAB ── */
+    .fab {
+      background: #1F2937; width: 52px; height: 52px;
+      border-radius: 9999px; box-shadow: 0 4px 20px rgba(0,0,0,.25);
+      display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
+      font-size: 20px;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 40px 20px; gap: 10px;
+    }
+    .empty-icon { font-size: 48px; opacity: .35; }
+    .empty-text { font-size: 16px; font-weight: 700; color: var(--text-2); }
+
+    /* ── COLOR SWATCHES ── */
+    .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+    .swatch {
+      width: 52px; text-align: center;
+    }
+    .swatch-color {
+      height: 44px; border-radius: 8px;
+      border: 1px solid rgba(0,0,0,.08);
+      margin-bottom: 4px;
+    }
+    .swatch-hex  { font-size: 9px; color: #666; letter-spacing: -.2px; }
+    .swatch-name { font-size: 9px; font-weight: 600; color: #333; }
+
+    /* ── TYPOGRAPHY DEMO ── */
+    .typo-row { padding: 10px 0; border-bottom: 1px solid #F0F0F8; }
+    .typo-meta { font-size: 10px; color: #AAA; margin-bottom: 3px; letter-spacing: .05em; }
+
+    /* ── LIST ITEM ── */
+    .list-item {
+      background: var(--card-bg); border-radius: 16px; padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 8px;
+    }
+    .list-thumb {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--primary-light);
+      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .list-info { flex: 1; }
+    .list-title { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-1); }
+    .list-sub   { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+    .list-arrow { color: var(--text-3); font-size: 14px; }
+
+    /* UP 뱃지 */
+    .up-badge {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, #818CF8, #5F46FF);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">🎨 Color Palette</div>
+  <div class="swatches">
+    <div class="swatch"><div class="swatch-color" style="background:#5F46FF"></div><div class="swatch-name">Primary</div><div class="swatch-hex">#5F46FF</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#4A35E0"></div><div class="swatch-name">P.Dark</div><div class="swatch-hex">#4A35E0</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#EEEAFF"></div><div class="swatch-name">P.Light</div><div class="swatch-hex">#EEEAFF</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F4F3FF"></div><div class="swatch-name">App BG</div><div class="swatch-hex">#F4F3FF</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#FFFFFF;border:1px solid #ddd"></div><div class="swatch-name">Card</div><div class="swatch-hex">#FFFFFF</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#F5F5F8"></div><div class="swatch-name">Muted</div><div class="swatch-hex">#F5F5F8</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#111827"></div><div class="swatch-name">Text 1</div><div class="swatch-hex">#111827</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#6B7280"></div><div class="swatch-name">Text 2</div><div class="swatch-hex">#6B7280</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#9CA3AF"></div><div class="swatch-name">Text 3</div><div class="swatch-hex">#9CA3AF</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#10B981"></div><div class="swatch-name">Success</div><div class="swatch-hex">#10B981</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#EF4444"></div><div class="swatch-name">Error</div><div class="swatch-hex">#EF4444</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:#E5E7EB"></div><div class="swatch-name">Border</div><div class="swatch-hex">#E5E7EB</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">🔤 Typography</div>
+
+  <div class="typo-row">
+    <div class="typo-meta">DISPLAY · 36px · 700</div>
+    <div style="font-size:36px;font-weight:700;letter-spacing:-0.5px;color:#111827">0.001071</div>
+  </div>
+  <div class="typo-row">
+    <div class="typo-meta">TITLE 1 · 28px · 700</div>
+    <div style="font-size:28px;font-weight:700;letter-spacing:-0.3px;color:#111827">8,913 UP</div>
+  </div>
+  <div class="typo-row">
+    <div class="typo-meta">TITLE 2 · 22px · 700</div>
+    <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px;color:#111827">어디로 보낼까요?</div>
+  </div>
+  <div class="typo-row">
+    <div class="typo-meta">TITLE 3 · 18px · 700</div>
+    <div style="font-size:18px;font-weight:700;letter-spacing:-0.3px;color:#111827">나의 UP</div>
+  </div>
+  <div class="typo-row">
+    <div class="typo-meta">TITLE 4 · 16px · 700</div>
+    <div style="font-size:16px;font-weight:700;letter-spacing:-0.3px;color:#111827">당첨 결과 확인</div>
+  </div>
+  <div class="typo-row">
+    <div class="typo-meta">BODY 1 · 15px · 400</div>
+    <div style="font-size:15px;font-weight:400;color:#111827">WETH.e 코인은 Avalanche C-Chain에서 발행된 코인입니다.</div>
+  </div>
+  <div class="typo-row">
+    <div class="typo-meta">BODY 2 · 14px · 400 · #6B7280</div>
+    <div style="font-size:14px;font-weight:400;color:#6B7280">래플 종료 | 응모수 303,998</div>
+  </div>
+  <div class="typo-row">
+    <div class="typo-meta">CAPTION · 12px · 400 · #9CA3AF</div>
+    <div style="font-size:12px;font-weight:400;color:#9CA3AF;letter-spacing:-0.2px">시세기준 CoinGecko 26.06.04 17:17</div>
+  </div>
+  <div class="typo-row" style="border:none">
+    <div class="typo-meta">LINK / HIGHLIGHT · Primary</div>
+    <div style="font-size:15px;font-weight:400;color:#111827">
+      전송 시 받는 지갑 주소가 <span style="color:#5F46FF">Avalanche C-Chain 네트워크</span>의 지갑 주소인지 반드시 확인해 주세요.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">🔘 Buttons</div>
+
+  <div class="kit-block">
+    <div class="kit-label">Primary — Full Width CTA</div>
+    <button class="btn btn-primary">당첨 결과 확인</button>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Primary + Secondary — 나란히</div>
+    <div class="btn-row">
+      <button class="btn btn-primary-md">더 넣기</button>
+      <button class="btn btn-primary-md">찾기</button>
+    </div>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Primary + Secondary — 보내기 / 받기</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" style="flex:1">보내기</button>
+      <button class="btn btn-secondary">받기</button>
+    </div>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Outline Pill (소형)</div>
+    <div class="kit-row">
+      <button class="btn btn-outline">최근 보낸 주소</button>
+      <button class="btn btn-outline">QR 스캔</button>
+      <button class="btn btn-outline">NFT 전체보기</button>
+    </div>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Text Button</div>
+    <div class="kit-row">
+      <button class="btn-text">취소</button>
+      <button class="btn-text">✓ 응모한 래플 보기</button>
+    </div>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Result CTA — 다시 뽑기 / 확인 (Secondary + Primary)</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary">다시 뽑기</button>
+      <button class="btn btn-primary-md">확인</button>
+    </div>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Gray — 보조 액션 (사진 저장 / 공유하기)</div>
+    <div class="btn-row">
+      <button class="btn btn-gray">📥 사진 저장</button>
+      <button class="btn btn-gray">📤 공유하기</button>
+    </div>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Disabled</div>
+    <button class="btn btn-disabled" disabled>다음</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">🔲 Input Fields</div>
+
+  <div class="kit-block">
+    <div class="kit-label">Default</div>
+    <div class="input-wrap">
+      <input class="input-field" placeholder="검색"/>
+    </div>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Focused (클릭해 보세요)</div>
+    <div class="search-bar">
+      <div class="input-wrap" style="flex:1;position:relative">
+        <input class="input-field" value="검색"/>
+        <button class="input-clear">✕</button>
+      </div>
+      <button class="btn-text">취소</button>
+    </div>
+  </div>
+  <div class="kit-block">
+    <div class="kit-label">Address Input (지갑 주소)</div>
+    <div style="background:#fff;border-radius:16px;padding:20px;">
+      <div style="font-size:22px;font-weight:700;letter-spacing:-0.3px;margin-bottom:16px;">어디로 보낼까요?</div>
+      <div style="font-size:18px;line-height:1.7;color:#111827;position:relative;padding-right:36px;">
+        <span style="color:#5F46FF">0x7d</span>f276eae11d4efbc483abbf581132e2e06f<span style="color:#5F46FF">019d</span>
+        <button style="position:absolute;right:0;top:2px;width:24px;height:24px;border-radius:50%;background:#E5E7EB;border:none;cursor:pointer;font-size:11px;color:#6B7280">✕</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">📑 Tab Bar</div>
+  <div style="background:#fff;border-radius:12px;overflow:hidden">
+    <div class="tab-bar">
+      <button class="tab-item">진행 중</button>
+      <button class="tab-item active">종료</button>
+    </div>
+    <div class="tab-bar" style="border-top:none">
+      <button class="tab-item active">라운지</button>
+      <button class="tab-item">아발란체</button>
+      <button class="tab-item">밀크</button>
+      <button class="tab-item">마이비</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">🏷️ Badge &amp; Chip</div>
+  <div class="kit-row">
+    <span class="badge badge-success">응모 완료</span>
+    <span class="badge badge-primary">추천</span>
+    <span class="badge badge-count">+51</span>
+    <span class="badge badge-error">오류</span>
+  </div>
+  <div class="kit-row" style="margin-top:8px">
+    <button class="chip active">100일상인증💯</button>
+    <button class="chip">코린이공부방📖</button>
+    <button class="chip">전체</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">📅 Attendance Oval (출석 체크)</div>
+  <div class="oval-wrap">
+    <div class="oval oval-active">
+      <div class="oval-label">출석</div>
+      <div class="oval-num">10</div>
+      <div class="oval-unit">UP</div>
+    </div>
+    <div class="oval oval-inactive">
+      <div class="oval-label">2일</div>
+      <div class="oval-num">15</div>
+      <div class="oval-unit">UP</div>
+    </div>
+    <div class="oval oval-inactive">
+      <div class="oval-label">3일</div>
+      <div class="oval-num">20</div>
+      <div class="oval-unit">UP</div>
+    </div>
+    <div class="oval oval-inactive">
+      <div class="oval-label">4일</div>
+      <div class="oval-num">25</div>
+      <div class="oval-unit">UP</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">🗂️ Cards &amp; List</div>
+
+  <div class="kit-block">
+    <div class="kit-label">Standard Card</div>
+    <div class="card">
+      <div style="font-size:18px;font-weight:700;letter-spacing:-0.3px;margin-bottom:12px">나의 UP <span style="font-size:14px;color:#9CA3AF;font-weight:400">›</span></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="up-badge">UP</div>
+        <span style="font-size:28px;font-weight:700;letter-spacing:-0.3px">8,913</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="kit-block">
+    <div class="kit-label">List Item</div>
+    <div class="list-item">
+      <div class="list-thumb">🎁</div>
+      <div class="list-info">
+        <div class="list-title">래플</div>
+        <div class="list-sub">UP으로 상품 응모하기</div>
+      </div>
+      <span class="list-arrow">›</span>
+    </div>
+    <div class="list-item">
+      <div class="list-thumb">🪙</div>
+      <div class="list-info">
+        <div class="list-title">커뮤니티</div>
+        <div class="list-sub">오늘 인기 게시물 보기</div>
+      </div>
+      <span class="badge badge-primary" style="font-size:10px">추천</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">📋 Bottom Sheet</div>
+  <div class="kit-label" style="margin-bottom:8px">구조: bs-overlay (딤) > bs-sheet (슬라이드업) · border-radius: 24 24 0 0 · width: 360px</div>
+  <div class="bs-overlay-demo">
+    <div class="bottom-sheet-demo">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <span class="sheet-title">📜 부적 상세</span>
+        <button class="sheet-close">✕</button>
+      </div>
+      <div class="info-row-card">
+        <span class="info-row-label">등급</span>
+        <span class="info-row-value" style="color:#F0A500">황금부적</span>
+      </div>
+      <div class="sheet-body">
+        바텀시트는 <b>bs-overlay</b>(배경 딤) + <b>bs-sheet</b> 조합으로 구성됩니다.<br>
+        마운트 시 <code>translateY(100%)→0</code> 슬라이드업 애니메이션 적용.
+      </div>
+      <button class="btn btn-primary">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">🖼️ UP Icon 사용 규칙</div>
+  <div class="up-rule-box">
+    <img src="/up-icon.png" class="up-rule-img" alt="UP" onerror="this.style.display='none';this.nextSibling.textContent='[up-icon.png]'"/>
+    <span></span>
+    <div class="up-rule-text">
+      UP 포인트를 표시하는 모든 곳에는 반드시 <b>/public/up-icon.png</b> 파일을 사용합니다.<br>
+      버튼 아이콘, 헤더 잔액, 동전 투척 애니메이션 모두 동일 에셋 사용.<br>
+      텍스트 "UP" 단독 사용 금지 — 반드시 이미지 + 숫자 조합으로 표시.
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">🌀 Empty State &amp; FAB</div>
+  <div class="kit-row" style="align-items:flex-start;gap:24px">
+    <div class="empty-state" style="flex:1;background:#fff;border-radius:16px">
+      <span class="empty-icon">📄</span>
+      <span class="empty-text">거래 내역이 없습니다</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+      <button class="fab">✏️</button>
+      <span style="font-size:10px;color:#888">FAB</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ -->
+<div class="kit-section">
+  <div class="kit-title">📱 App Frame — 투자 부적 뽑는 우물</div>
+  <div class="kit-label" style="margin-bottom:10px">#app: 360 × 711px fixed · 상단 헤더(56px) + 탑탭(46px) + 스크롤 콘텐츠 + 하단 CTA(절대위치 top:639px, 312×48px)</div>
+  <div class="app-frame" style="width:360px;height:711px;position:relative;overflow:hidden;display:flex;flex-direction:column">
+    <!-- 헤더 -->
+    <div class="app-header" style="height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px 0 8px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button style="background:none;border:none;padding:8px;cursor:pointer;font-size:18px;color:var(--text-1)">←</button>
+      <span style="font-size:17px;font-weight:700;letter-spacing:-0.3px">투자 부적 뽑는 우물</span>
+      <div style="display:flex;align-items:center;gap:4px;background:var(--primary-200);border-radius:20px;padding:4px 10px">
+        <img src="/up-icon.png" style="width:18px;height:18px;object-fit:contain" onerror="this.style.display='none'"/>
+        <span style="font-size:14px;font-weight:700;color:var(--primary)">1,000</span>
+      </div>
+    </div>
+    <!-- 탑탭 -->
+    <div style="height:46px;display:flex;background:#fff;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button style="flex:1;border:none;background:none;font-size:15px;font-weight:700;color:var(--text-1);border-bottom:2px solid var(--text-1);cursor:pointer">우물</button>
+      <button style="flex:1;border:none;background:none;font-size:15px;font-weight:400;color:var(--text-3);cursor:pointer">부적첩</button>
+    </div>
+    <!-- 콘텐츠 -->
+    <div style="flex:1;background:var(--app-bg);display:flex;align-items:center;justify-content:center">
+      <span style="font-size:13px;color:var(--text-3)">스크롤 콘텐츠 영역</span>
+    </div>
+    <!-- 하단 CTA -->
+    <div style="position:absolute;top:639px;left:24px;width:312px;height:48px">
+      <button style="width:100%;height:100%;background:var(--primary);color:#fff;font-size:16px;font-weight:700;border:none;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer">
+        <img src="/up-icon.png" style="width:22px;height:22px;object-fit:contain" onerror="this.style.display='none'"/>
+        10 UP 던지기
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="kit-section" style="display:none"><!-- legacy app-frame (archived) -->
+  <div class="app-frame">
+    <div class="app-header">
+      <span style="font-size:20px;cursor:pointer">☰</span>
+      <div style="display:flex;gap:14px;align-items:center">
+        <span style="font-size:13px;font-weight:500;border:1px solid #ccc;padding:3px 8px;border-radius:4px">[내주소]</span>
+        <span>🎁</span><span>⊞</span><span>🔔</span>
+      </div>
+    </div>
+    <div style="padding:16px;background:var(--app-bg);display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;color:#9CA3AF;margin-bottom:10px">나의 UP ›</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="up-badge">UP</div>
+          <span style="font-size:26px;font-weight:700">8,913</span>
+        </div>
+        <div style="height:1px;background:#F3F4F6;margin:14px 0"></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">출석 체크하고 UP을 모아보세요!</div>
+        <div style="font-size:12px;color:#6B7280;margin-bottom:12px">오늘부터 출석체크 시작🔥</div>
+        <div class="oval-wrap" style="justify-content:space-between">
+          <div class="oval oval-active" style="padding:10px 14px;min-width:56px">
+            <div class="oval-label" style="font-size:11px">출석</div>
+            <div class="oval-num" style="font-size:18px">10</div>
+            <div class="oval-unit" style="font-size:10px">UP</div>
+          </div>
+          <div class="oval oval-inactive" style="padding:10px 14px;min-width:56px">
+            <div class="oval-label" style="font-size:11px">2일</div>
+            <div class="oval-num" style="font-size:18px">15</div>
+            <div class="oval-unit" style="font-size:10px">UP</div>
+          </div>
+          <div class="oval oval-inactive" style="padding:10px 14px;min-width:56px">
+            <div class="oval-label" style="font-size:11px">3일</div>
+            <div class="oval-num" style="font-size:18px">20</div>
+            <div class="oval-unit" style="font-size:10px">UP</div>
+          </div>
+          <div class="oval oval-inactive" style="padding:10px 14px;min-width:56px">
+            <div class="oval-label" style="font-size:11px">4일</div>
+            <div class="oval-num" style="font-size:18px">25</div>
+            <div class="oval-unit" style="font-size:10px">UP</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px">커뮤니티 ›</div>
+        <div style="display:flex;gap:16px">
+          <div style="text-align:center">
+            <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#818CF8,#5F46FF);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:4px">🌀</div>
+            <div style="font-size:12px;color:#374151">라운지</div>
+          </div>
+          <div style="text-align:center">
+            <div style="width:52px;height:52px;border-radius:50%;background:#EF4444;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:4px">🅐</div>
+            <div style="font-size:12px;color:#374151">아발란체</div>
+          </div>
+          <div style="text-align:center;position:relative">
+            <div style="width:52px;height:52px;border-radius:50%;background:#10B981;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:4px">🏠</div>
+            <div style="font-size:12px;color:#374151">밀크</div>
+          </div>
+          <div style="text-align:center;position:relative">
+            <div style="width:52px;height:52px;border-radius:50%;background:#1F2937;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:4px">Ⓑ</div>
+            <span class="badge badge-primary" style="position:absolute;top:-4px;right:-4px;font-size:9px;padding:2px 5px">추천</span>
+            <div style="font-size:12px;color:#374151">마이비</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+
