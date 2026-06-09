@@ -8,8 +8,8 @@
 
     <div v-if="throwHistory.length === 0" class="history-empty">
       <span class="empty-icon">📜</span>
-      <span class="empty-title">아직 부적이 없습니다</span>
-      <span class="empty-desc">우물에 동전을 던져보거라</span>
+      <span class="empty-title">아직 부적이 없습니다.</span>
+      <span class="empty-desc">우물에 UP을 던져보거라</span>
     </div>
 
     <div v-else class="history-grid">
