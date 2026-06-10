@@ -1,9 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY as string
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) ?? ''
+const supabaseKey = (import.meta.env.VITE_SUPABASE_KEY as string) ?? ''
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('[supabase] 환경변수 없음 — 랭킹 기능 비활성화')
+}
+
+export const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey)
+  : null as any
 
 export interface RankingRow {
   nickname: string
@@ -12,6 +18,7 @@ export interface RankingRow {
 
 /** 닉네임별 최고 점수만 top 10 */
 export async function fetchRankings(): Promise<RankingRow[]> {
+  if (!supabase) return []
   const { data, error } = await supabase
     .from('Piggy Cathcer')
     .select('nickname, score')
@@ -38,6 +45,7 @@ export async function fetchRankings(): Promise<RankingRow[]> {
 
 /** 닉네임의 기존 최고 점수보다 높을 때만 저장. 에러 메시지 반환 */
 export async function saveScore(nickname: string, score: number): Promise<string | null> {
+  if (!supabase) return null
   const trimmed = nickname.trim()
   if (!trimmed) return null
 
