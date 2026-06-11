@@ -16,8 +16,7 @@
     <!-- 석재 우물 카드 -->
     <div class="well-card" v-show="phase === 'idle' || phase === 'throwing'">
       <div class="well-wrap">
-        <div class="stone-outer"></div>
-        <div class="stone-inner"></div>
+        <div class="well-img" role="img" aria-label="우물"></div>
         <div class="well-abyss">
           <div class="abyss-glow"></div>
           <div class="abyss-fog"></div>
@@ -56,10 +55,10 @@
       <!-- 저장 / 공유 -->
       <div class="action-row">
         <button class="act-btn" :disabled="saving" @click="onSave">
-          {{ saving ? '⏳' : '📥' }} {{ saving ? '저장 중' : '사진 저장' }}
+          {{ saving ? '저장 중...' : '부적 저장' }}
         </button>
         <button class="act-btn" :disabled="sharing" @click="onShare">
-          {{ sharing ? '⏳' : '📤' }} {{ sharing ? '준비 중' : '공유하기' }}
+          {{ sharing ? '준비 중...' : '공유하기' }}
         </button>
       </div>
     </div>

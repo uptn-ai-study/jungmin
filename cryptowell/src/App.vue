@@ -52,26 +52,12 @@
     </button>
   </div>
 
-  <!-- 하단 고정 CTA: result — 다시 뽑기 / 확인 -->
+  <!-- 하단 고정 CTA: result — 확인 -->
   <div
     v-if="currentTab === 'well' && phase === 'result'"
     class="bottom-cta"
   >
-    <div class="result-cta">
-      <button
-        class="btn btn-result-again"
-        :disabled="pts < COST"
-        @click="resetWell"
-      >
-        {{ pts >= COST ? '다시 뽑기' : 'UP 부족' }}
-      </button>
-      <button
-        class="btn btn-result-confirm"
-        @click="currentTab = 'history'"
-      >
-        확인
-      </button>
-    </div>
+    <button class="throw-btn" @click="resetWell">확인</button>
   </div>
 </template>
 
