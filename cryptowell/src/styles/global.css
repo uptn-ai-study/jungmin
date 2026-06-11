@@ -174,18 +174,18 @@ button { font-family: inherit; cursor: pointer; }
 /* 우물 카드 */
 .well-card {
   width: 100%; background: var(--card-bg); border-radius: 16px;
-  padding: 28px 16px 24px;
+  padding: 16px 16px 16px;
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
   display: flex; flex-direction: column; align-items: center; gap: 0;
 }
 /* 우물 이미지 아래 간격 */
-.well-card .well-wrap { margin-bottom: 20px; }
+.well-card .well-wrap { margin-bottom: 4px; }
 
 /* 뽑기 횟수 레이블 */
 .throw-count-label {
   font-size: 13px; font-weight: 500; letter-spacing: -0.2px;
   color: var(--text-3);
-  margin-top: 20px;
+  margin-top: 8px;
 }
 
 /* ══════════════════════════════════
@@ -193,7 +193,7 @@ button { font-family: inherit; cursor: pointer; }
 ══════════════════════════════════ */
 .well-wrap {
   position: relative;
-  width: 300px; height: 300px;
+  width: 260px; height: 260px;
   background: #ffffff;
   border-radius: 20px;
   overflow: hidden;
@@ -203,7 +203,7 @@ button { font-family: inherit; cursor: pointer; }
 .well-img {
   position: absolute;
   inset: 0;
-  background: #ffffff url('/cryptowell.png') center 55%/115% auto no-repeat;
+  background: #ffffff url('/cryptowell.png') center 40%/cover no-repeat;
   z-index: 0;
 }
 
