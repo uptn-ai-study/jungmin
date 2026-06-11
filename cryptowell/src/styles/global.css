@@ -27,7 +27,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   width: 100%; height: 100%;
-  background: #E8E6FF;
+  background: #C8C4F0;
   overflow: hidden;
   font-family: 'SUIT Variable', 'SUIT', -apple-system, sans-serif;
 }
@@ -38,14 +38,18 @@ button { font-family: inherit; cursor: pointer; }
 ══════════════════════════════════ */
 #app {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
+  max-width: 430px;
   height: 100%;
   display: flex; flex-direction: column;
   background: var(--app-bg);
   overflow: hidden;
   /* iOS 노치/홈바 safe area */
   padding-top: env(safe-area-inset-top, 0px);
+  box-shadow: 0 0 40px rgba(0,0,0,0.18);
 }
 
 /* ══════════════════════════════════
