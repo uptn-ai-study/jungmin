@@ -169,6 +169,27 @@ function fromRow(row: any): Product {
   }
 }
 
+function toRow(p: Product) {
+  return {
+    id: p.id,
+    user_id: userId.value!,
+    name: p.name,
+    seller: p.seller,
+    category: p.category,
+    item_code: p.itemCode,
+    price: p.price,
+    price_source: p.priceSource,
+    priority: p.priority,
+    memo: p.memo,
+    is_liked: p.isLiked,
+    status: p.status,
+    video_title: p.videoTitle ?? null,
+    video_url: p.videoUrl ?? null,
+    video_thumbnail: p.videoThumbnail ?? null,
+    saved_at: p.savedAt,
+  }
+}
+
 const tabs = [
   { key: 'home' as Tab, label: '보관함' },
   { key: 'my' as Tab, label: '마이' },
@@ -212,12 +233,19 @@ function openFolder(category: Category) {
 
 function toggleLike(id: string) {
   const p = savedProducts.value.find(p => p.id === id)
-  if (p) p.isLiked = !p.isLiked
+  if (!p) return
+  p.isLiked = !p.isLiked
+  if (userId.value) {
+    supabase.from('products').update({ is_liked: p.isLiked }).eq('id', id).then()
+  }
 }
 
 function deleteProduct(id: string) {
   savedProducts.value = savedProducts.value.filter(p => p.id !== id)
   showToast('삭제했어요')
+  if (userId.value) {
+    supabase.from('products').delete().eq('id', id).then()
+  }
 }
 
 function saveBudgets(b: Record<Category, number>) {
@@ -232,7 +260,11 @@ function applyEdit() {
   if (!editProduct.value) return
   const idx = savedProducts.value.findIndex(p => p.id === editProduct.value!.id)
   if (idx !== -1) {
-    savedProducts.value[idx] = { ...editProduct.value, priceSource: 'user' }
+    const updated = { ...editProduct.value, priceSource: 'user' as const }
+    savedProducts.value[idx] = updated
+    if (userId.value) {
+      supabase.from('products').update(toRow(updated)).eq('id', updated.id).then()
+    }
   }
   editProduct.value = null
 }
@@ -271,9 +303,19 @@ async function startAnalyze(url: string) {
 }
 
 function saveProducts(products: Product[]) {
-  savedProducts.value.unshift(...products)
-  showToast(`${products.length}개 저장됐어요`)
+  const video = analysisResult.value?.video
+  const enriched = products.map(p => ({
+    ...p,
+    videoTitle: video?.title,
+    videoUrl: video?.url,
+    videoThumbnail: video?.thumbnail,
+  }))
+  savedProducts.value.unshift(...enriched)
+  showToast(`${enriched.length}개 저장됐어요`)
   subScreen.value = null
+  if (userId.value) {
+    supabase.from('products').insert(enriched.map(toRow)).then()
+  }
 }
 </script>
 
