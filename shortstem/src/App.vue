@@ -29,7 +29,7 @@
         :analyzing="analyzing"
         @back="subScreen = null"
         @save="saveProducts"
-        @edit-product="openEditProduct"
+        @edit-product="openDetailProduct"
       />
 
       <!-- 폴더 상세 -->
@@ -42,6 +42,7 @@
         @toggle-like="toggleLike"
         @delete-product="deleteProduct"
         @open-budget="budgetSheetOpen = true"
+        @open-product="openDetailProduct"
       />
 
       <!-- 찜 목록 -->
@@ -50,6 +51,7 @@
         :all-products="savedProducts"
         @back="subScreen = null"
         @toggle-like="toggleLike"
+        @open-product="openDetailProduct"
       />
 
       <!-- 하단 탭 바 (서브스크린 아닐때만) -->
@@ -85,40 +87,13 @@
         @save="saveBudgets"
       />
 
-      <!-- 상품 수정 시트 -->
-      <Transition name="fade">
-        <div v-if="editProduct" class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-end justify-center" @click.self="editProduct = null">
-          <div class="w-full max-w-[430px] bg-paper rounded-t-3xl px-5 pb-10 pt-3 shadow-paper-lg">
-            <div class="w-10 h-1.5 rounded-full bg-gray-200 mx-auto mb-5" />
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-black text-gray-900">상품 수정</h3>
-              <button class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500" @click="editProduct = null">✕</button>
-            </div>
-            <div class="flex flex-col gap-3">
-              <div>
-                <label class="text-xs font-semibold text-gray-400 mb-1 block">상품명</label>
-                <input v-model="editProduct.name" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
-              </div>
-              <div>
-                <label class="text-xs font-semibold text-gray-400 mb-1 block">판매처</label>
-                <input v-model="editProduct.seller" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
-              </div>
-              <div>
-                <label class="text-xs font-semibold text-gray-400 mb-1 block">가격 (원)</label>
-                <input v-model.number="editProduct.price" type="number" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
-              </div>
-              <div>
-                <label class="text-xs font-semibold text-gray-400 mb-1 block">메모</label>
-                <input v-model="editProduct.memo" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" placeholder="선택사항" />
-              </div>
-            </div>
-            <div class="flex gap-2.5 mt-5">
-              <button class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm" @click="editProduct = null">취소</button>
-              <button class="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm" @click="applyEdit">저장</button>
-            </div>
-          </div>
-        </div>
-      </Transition>
+      <!-- 상품 상세 시트 -->
+      <ProductDetailSheet
+        :product="detailProduct"
+        @close="detailProduct = null"
+        @save="applyEdit"
+        @toggle-like="toggleLike"
+      />
 
     </div>
   </div>
@@ -132,6 +107,7 @@ import AnalysisScreen from './screens/AnalysisScreen.vue'
 import FolderDetailScreen from './screens/FolderDetailScreen.vue'
 import LikedScreen from './screens/LikedScreen.vue'
 import BudgetSheet from './components/BudgetSheet.vue'
+import ProductDetailSheet from './components/ProductDetailSheet.vue'
 import { supabase } from './lib/supabase'
 import type { Product, Category, AnalysisResult } from './types'
 
@@ -146,7 +122,7 @@ const savedProducts = ref<Product[]>([])
 const activeFolder = ref<Category | null>(null)
 const budgetSheetOpen = ref(false)
 const toastMsg = ref<string | null>(null)
-const editProduct = ref<Product | null>(null)
+const detailProduct = ref<Product | null>(null)
 const userId = ref<string | null>(null)
 
 function fromRow(row: any): Product {
@@ -252,21 +228,20 @@ function saveBudgets(b: Record<Category, number>) {
   Object.assign(budgets, b)
 }
 
-function openEditProduct(product: Product) {
-  editProduct.value = { ...product }
+function openDetailProduct(product: Product) {
+  detailProduct.value = { ...product }
 }
 
-function applyEdit() {
-  if (!editProduct.value) return
-  const idx = savedProducts.value.findIndex(p => p.id === editProduct.value!.id)
+function applyEdit(edited: Product) {
+  const idx = savedProducts.value.findIndex(p => p.id === edited.id)
   if (idx !== -1) {
-    const updated = { ...editProduct.value, priceSource: 'user' as const }
+    const updated = { ...edited, priceSource: 'user' as const }
     savedProducts.value[idx] = updated
     if (userId.value) {
       supabase.from('products').update(toRow(updated)).eq('id', updated.id).then()
     }
   }
-  editProduct.value = null
+  detailProduct.value = null
 }
 
 async function startAnalyze(url: string) {
