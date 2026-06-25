@@ -87,6 +87,7 @@ ${commentPrices ? `\n가격 언급 댓글:\n${commentPrices}` : ''}
 - seller: 브랜드가 아닌 판매처(스토어). 예: 다이소, 올리브영, 쿠팡, 무신사. 다이소 영상이면 반드시 "다이소". 모르면 "미확인".
 - category: 생활용품/뷰티/전자기기/식품/패션/기타 중 하나
 - itemCode: 다이소 상품의 품번(#12345 또는 품번:12345 형식)이 있으면 문자열, 없으면 null
+- purchaseUrl: 영상 설명에서 이 상품의 구매 링크 URL(http로 시작)이 있으면 문자열, 없으면 null
 - price: 원 단위 정수. 아래 우선순위대로 결정:
   1순위: 설명 또는 자막에 가격이 명시된 경우 → priceSource: "description"
   2순위: 댓글에 가격이 언급된 경우 → priceSource: "comment"

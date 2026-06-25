@@ -141,6 +141,7 @@ function fromRow(row: any): Product {
     videoTitle: row.video_title ?? undefined,
     videoUrl: row.video_url ?? undefined,
     videoThumbnail: row.video_thumbnail ?? undefined,
+    purchaseUrl: row.purchase_url ?? null,
     savedAt: row.saved_at,
   }
 }
@@ -162,6 +163,7 @@ function toRow(p: Product) {
     video_title: p.videoTitle ?? null,
     video_url: p.videoUrl ?? null,
     video_thumbnail: p.videoThumbnail ?? null,
+    purchase_url: p.purchaseUrl ?? null,
     saved_at: p.savedAt,
   }
 }

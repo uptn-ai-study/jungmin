@@ -65,8 +65,16 @@
           </div>
         </div>
 
-        <!-- 찜하기 -->
+        <!-- 구매 링크 (있을 때만) / 없으면 찜하기 -->
+        <a
+          v-if="product.purchaseUrl"
+          :href="product.purchaseUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="w-full mt-4 py-3 rounded-xl text-sm font-bold text-center block bg-gray-900 text-white"
+        >🛒 구매하러 가기</a>
         <button
+          v-else
           class="w-full mt-4 py-3 rounded-xl text-sm font-bold transition-colors"
           :class="draft.isLiked ? 'bg-pink-100 text-pink-500' : 'bg-gray-100 text-gray-500'"
           @click="handleToggleLike"
