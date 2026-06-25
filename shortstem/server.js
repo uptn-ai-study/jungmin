@@ -90,8 +90,10 @@ ${commentPrices ? `\n가격 언급 댓글:\n${commentPrices}` : ''}
 - price: 원 단위 정수. 아래 우선순위대로 결정:
   1순위: 설명 또는 자막에 가격이 명시된 경우 → priceSource: "description"
   2순위: 댓글에 가격이 언급된 경우 → priceSource: "comment"
-  3순위: AI가 확실히 알고 있는 공식 판매가(다이소 균일가, 올리브영 정가 등 변하지 않는 가격) → priceSource: "known"
-  4순위: 유사 상품 시세 기반 추정(상품은 특정되나 정확한 가격 모를 때) → priceSource: "estimated"
+  3순위: 다이소(1000/2000/3000/5000원 균일가)처럼 공식 고정가가 명확한 경우만 → priceSource: "known"
+    (무신사·쿠팡·올리브영·지그재그 등 브랜드/시즌별 가격이 변동하는 판매처는 절대 known 사용 금지)
+  4순위: 설명·자막·제목에서 파악한 브랜드명 + 상품 종류 + 카테고리를 종합해 실제 판매가에 최대한 가까운 시세 추정 → priceSource: "estimated"
+    (예: "무신사 스탠다드 후드집업" → 무신사 스탠다드 브랜드 레인지(3~6만원대) 기반 추정)
   가격이 0이면 안 됨.
 - priceSource: 위 우선순위에 따라 "description" / "comment" / "known" / "estimated" 중 하나
 
