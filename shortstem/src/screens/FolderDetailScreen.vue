@@ -32,7 +32,7 @@
           />
           <button
             class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-white shadow-paper flex items-center justify-center text-xs text-gray-400 hover:text-rose-400 transition-colors z-10"
-            @click="$emit('deleteProduct', p.id)"
+            @click.stop="$emit('deleteProduct', p.id)"
           >✕</button>
         </div>
       </template>
