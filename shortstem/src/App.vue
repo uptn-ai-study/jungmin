@@ -1,0 +1,286 @@
+<template>
+  <div class="min-h-screen bg-cream flex justify-center">
+    <div class="w-full max-w-[430px] min-h-screen bg-cream relative overflow-x-hidden">
+
+      <!-- 콘텐츠 영역 -->
+      <!-- 홈 (보관함 탭) -->
+      <HomeScreen
+        v-if="activeTab === 'home' && !subScreen"
+        :all-products="savedProducts"
+        :analyzing="analyzing"
+        @analyze="startAnalyze"
+        @open-folder="openFolder"
+        @open-liked="subScreen = 'liked'"
+        @toggle-like="toggleLike"
+      />
+
+      <!-- 마이 탭 -->
+      <MyScreen
+        v-else-if="activeTab === 'my' && !subScreen"
+        :all-products="savedProducts"
+        :budgets="budgets"
+        @open-budget="budgetSheetOpen = true"
+      />
+
+      <!-- 분석 결과 -->
+      <AnalysisScreen
+        v-else-if="subScreen === 'analyze'"
+        :result="analysisResult"
+        :analyzing="analyzing"
+        @back="subScreen = null"
+        @save="saveProducts"
+        @edit-product="openEditProduct"
+      />
+
+      <!-- 폴더 상세 -->
+      <FolderDetailScreen
+        v-else-if="subScreen === 'folder' && activeFolder"
+        :category="activeFolder"
+        :items="folderItems"
+        :budget="budgets[activeFolder] ?? 0"
+        @back="subScreen = null"
+        @toggle-like="toggleLike"
+        @delete-product="deleteProduct"
+        @open-budget="budgetSheetOpen = true"
+      />
+
+      <!-- 찜 목록 -->
+      <LikedScreen
+        v-else-if="subScreen === 'liked'"
+        :all-products="savedProducts"
+        @back="subScreen = null"
+        @toggle-like="toggleLike"
+      />
+
+      <!-- 하단 탭 바 (서브스크린 아닐때만) -->
+      <nav
+        v-if="!subScreen"
+        class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-paper border-t border-gray-100 flex z-50"
+        style="padding-bottom: env(safe-area-inset-bottom)"
+      >
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="flex-1 flex flex-col items-center py-3 gap-0.5 transition-colors"
+          :class="activeTab === tab.key ? 'text-gray-900' : 'text-gray-300'"
+          @click="activeTab = tab.key"
+        >
+          <span class="text-sm font-bold tracking-wide">{{ tab.label }}</span>
+        </button>
+      </nav>
+
+      <!-- 토스트 -->
+      <Transition name="toast">
+        <div
+          v-if="toastMsg"
+          class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-paper-lg whitespace-nowrap z-[300]"
+        >{{ toastMsg }}</div>
+      </Transition>
+
+      <!-- 예산 시트 -->
+      <BudgetSheet
+        :open="budgetSheetOpen"
+        :budgets="budgets"
+        @close="budgetSheetOpen = false"
+        @save="saveBudgets"
+      />
+
+      <!-- 상품 수정 시트 -->
+      <Transition name="fade">
+        <div v-if="editProduct" class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-end justify-center" @click.self="editProduct = null">
+          <div class="w-full max-w-[430px] bg-paper rounded-t-3xl px-5 pb-10 pt-3 shadow-paper-lg">
+            <div class="w-10 h-1.5 rounded-full bg-gray-200 mx-auto mb-5" />
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-black text-gray-900">상품 수정</h3>
+              <button class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500" @click="editProduct = null">✕</button>
+            </div>
+            <div class="flex flex-col gap-3">
+              <div>
+                <label class="text-xs font-semibold text-gray-400 mb-1 block">상품명</label>
+                <input v-model="editProduct.name" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-400 mb-1 block">판매처</label>
+                <input v-model="editProduct.seller" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-400 mb-1 block">가격 (원)</label>
+                <input v-model.number="editProduct.price" type="number" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
+              </div>
+              <div>
+                <label class="text-xs font-semibold text-gray-400 mb-1 block">메모</label>
+                <input v-model="editProduct.memo" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" placeholder="선택사항" />
+              </div>
+            </div>
+            <div class="flex gap-2.5 mt-5">
+              <button class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm" @click="editProduct = null">취소</button>
+              <button class="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm" @click="applyEdit">저장</button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, reactive, onMounted } from 'vue'
+import HomeScreen from './screens/HomeScreen.vue'
+import MyScreen from './screens/MyScreen.vue'
+import AnalysisScreen from './screens/AnalysisScreen.vue'
+import FolderDetailScreen from './screens/FolderDetailScreen.vue'
+import LikedScreen from './screens/LikedScreen.vue'
+import BudgetSheet from './components/BudgetSheet.vue'
+import { supabase } from './lib/supabase'
+import type { Product, Category, AnalysisResult } from './types'
+
+type Tab = 'home' | 'my'
+type SubScreen = 'analyze' | 'folder' | 'liked' | null
+
+const activeTab = ref<Tab>('home')
+const subScreen = ref<SubScreen>(null)
+const analyzing = ref(false)
+const analysisResult = ref<AnalysisResult | null>(null)
+const savedProducts = ref<Product[]>([])
+const activeFolder = ref<Category | null>(null)
+const budgetSheetOpen = ref(false)
+const toastMsg = ref<string | null>(null)
+const editProduct = ref<Product | null>(null)
+const userId = ref<string | null>(null)
+
+function fromRow(row: any): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    seller: row.seller,
+    category: row.category,
+    itemCode: row.item_code,
+    price: row.price,
+    priceSource: row.price_source,
+    priority: row.priority,
+    memo: row.memo,
+    isLiked: row.is_liked,
+    status: row.status,
+    videoTitle: row.video_title ?? undefined,
+    videoUrl: row.video_url ?? undefined,
+    videoThumbnail: row.video_thumbnail ?? undefined,
+    savedAt: row.saved_at,
+  }
+}
+
+const tabs = [
+  { key: 'home' as Tab, label: '보관함' },
+  { key: 'my' as Tab, label: '마이' },
+]
+
+const budgets = reactive<Record<Category, number>>({
+  '뷰티': 0, '전자기기': 0, '생활용품': 0, '식품': 0, '패션': 0, '기타': 0,
+})
+
+const folderItems = computed(() =>
+  activeFolder.value
+    ? savedProducts.value.filter(p => p.category === activeFolder.value)
+    : []
+)
+
+onMounted(async () => {
+  let { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    const { data } = await supabase.auth.signInAnonymously()
+    session = data.session
+  }
+  if (!session) return
+  userId.value = session.user.id
+
+  const { data } = await supabase
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (data) savedProducts.value = data.map(fromRow)
+})
+
+function showToast(msg: string) {
+  toastMsg.value = msg
+  setTimeout(() => { toastMsg.value = null }, 2200)
+}
+
+function openFolder(category: Category) {
+  activeFolder.value = category
+  subScreen.value = 'folder'
+}
+
+function toggleLike(id: string) {
+  const p = savedProducts.value.find(p => p.id === id)
+  if (p) p.isLiked = !p.isLiked
+}
+
+function deleteProduct(id: string) {
+  savedProducts.value = savedProducts.value.filter(p => p.id !== id)
+  showToast('삭제했어요')
+}
+
+function saveBudgets(b: Record<Category, number>) {
+  Object.assign(budgets, b)
+}
+
+function openEditProduct(product: Product) {
+  editProduct.value = { ...product }
+}
+
+function applyEdit() {
+  if (!editProduct.value) return
+  const idx = savedProducts.value.findIndex(p => p.id === editProduct.value!.id)
+  if (idx !== -1) {
+    savedProducts.value[idx] = { ...editProduct.value, priceSource: 'user' }
+  }
+  editProduct.value = null
+}
+
+async function startAnalyze(url: string) {
+  subScreen.value = 'analyze'
+  analyzing.value = true
+  analysisResult.value = null
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || '분석 실패')
+
+    analysisResult.value = {
+      video: data.video,
+      products: data.products.map((p: any) => ({
+        ...p,
+        priority: 'medium' as const,
+        isLiked: false,
+        status: 'saved' as const,
+        memo: '',
+        savedAt: new Date().toISOString().slice(0, 10),
+      })),
+    }
+  } catch (err: any) {
+    showToast(err.message || '분석 중 오류가 발생했어요')
+    subScreen.value = null
+  } finally {
+    analyzing.value = false
+  }
+}
+
+function saveProducts(products: Product[]) {
+  savedProducts.value.unshift(...products)
+  showToast(`${products.length}개 저장됐어요`)
+  subScreen.value = null
+}
+</script>
+
+<style>
+.toast-enter-active, .toast-leave-active { transition: all 0.25s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 8px); }
+
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>
