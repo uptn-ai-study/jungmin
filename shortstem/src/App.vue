@@ -9,17 +9,16 @@
         :all-products="savedProducts"
         :analyzing="analyzing"
         @analyze="startAnalyze"
-        @open-folder="openFolder"
-        @open-liked="subScreen = 'liked'"
-        @toggle-like="toggleLike"
+        @open-video="openVideo"
       />
 
       <!-- 마이 탭 -->
       <MyScreen
         v-else-if="activeTab === 'my' && !subScreen"
         :all-products="savedProducts"
-        :budgets="budgets"
-        @open-budget="budgetSheetOpen = true"
+        @open-folder="openFolder"
+        @open-liked="subScreen = 'liked'"
+        @open-product="openDetailProduct"
       />
 
       <!-- 분석 결과 -->
@@ -41,7 +40,21 @@
         @back="subScreen = null"
         @toggle-like="toggleLike"
         @delete-product="deleteProduct"
+        @delete-all-products="deleteAllProducts"
+        @update-price="updatePrice"
         @open-budget="budgetSheetOpen = true"
+        @open-product="openDetailProduct"
+      />
+
+      <!-- 영상별 제품 목록 -->
+      <VideoDetailScreen
+        v-else-if="subScreen === 'video' && activeVideoUrl"
+        :video-url="activeVideoUrl"
+        :products="videoItems"
+        @back="subScreen = null"
+        @toggle-like="toggleLike"
+        @delete-product="deleteProduct"
+        @update-price="updatePrice"
         @open-product="openDetailProduct"
       />
 
@@ -79,14 +92,6 @@
         >{{ toastMsg }}</div>
       </Transition>
 
-      <!-- 예산 시트 -->
-      <BudgetSheet
-        :open="budgetSheetOpen"
-        :budgets="budgets"
-        @close="budgetSheetOpen = false"
-        @save="saveBudgets"
-      />
-
       <!-- 상품 상세 시트 -->
       <ProductDetailSheet
         :product="detailProduct"
@@ -100,19 +105,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import HomeScreen from './screens/HomeScreen.vue'
 import MyScreen from './screens/MyScreen.vue'
 import AnalysisScreen from './screens/AnalysisScreen.vue'
 import FolderDetailScreen from './screens/FolderDetailScreen.vue'
 import LikedScreen from './screens/LikedScreen.vue'
-import BudgetSheet from './components/BudgetSheet.vue'
+import VideoDetailScreen from './screens/VideoDetailScreen.vue'
 import ProductDetailSheet from './components/ProductDetailSheet.vue'
 import { supabase } from './lib/supabase'
 import type { Product, Category, AnalysisResult } from './types'
 
 type Tab = 'home' | 'my'
-type SubScreen = 'analyze' | 'folder' | 'liked' | null
+type SubScreen = 'analyze' | 'folder' | 'liked' | 'video' | null
 
 const activeTab = ref<Tab>('home')
 const subScreen = ref<SubScreen>(null)
@@ -120,7 +125,7 @@ const analyzing = ref(false)
 const analysisResult = ref<AnalysisResult | null>(null)
 const savedProducts = ref<Product[]>([])
 const activeFolder = ref<Category | null>(null)
-const budgetSheetOpen = ref(false)
+const activeVideoUrl = ref<string | null>(null)
 const toastMsg = ref<string | null>(null)
 const detailProduct = ref<Product | null>(null)
 const userId = ref<string | null>(null)
@@ -142,6 +147,7 @@ function fromRow(row: any): Product {
     videoUrl: row.video_url ?? undefined,
     videoThumbnail: row.video_thumbnail ?? undefined,
     purchaseUrl: row.purchase_url ?? null,
+    timestamp: row.timestamp ?? null,
     savedAt: row.saved_at,
   }
 }
@@ -164,22 +170,25 @@ function toRow(p: Product) {
     video_url: p.videoUrl ?? null,
     video_thumbnail: p.videoThumbnail ?? null,
     purchase_url: p.purchaseUrl ?? null,
+    timestamp: p.timestamp ?? null,
     saved_at: p.savedAt,
   }
 }
 
 const tabs = [
-  { key: 'home' as Tab, label: '보관함' },
+  { key: 'home' as Tab, label: '홈' },
   { key: 'my' as Tab, label: '마이' },
 ]
-
-const budgets = reactive<Record<Category, number>>({
-  '뷰티': 0, '전자기기': 0, '생활용품': 0, '식품': 0, '패션': 0, '기타': 0,
-})
 
 const folderItems = computed(() =>
   activeFolder.value
     ? savedProducts.value.filter(p => p.category === activeFolder.value)
+    : []
+)
+
+const videoItems = computed(() =>
+  activeVideoUrl.value
+    ? savedProducts.value.filter(p => p.videoUrl === activeVideoUrl.value)
     : []
 )
 
@@ -209,6 +218,11 @@ function openFolder(category: Category) {
   subScreen.value = 'folder'
 }
 
+function openVideo(videoUrl: string) {
+  activeVideoUrl.value = videoUrl
+  subScreen.value = 'video'
+}
+
 function toggleLike(id: string) {
   const p = savedProducts.value.find(p => p.id === id)
   if (!p) return
@@ -226,8 +240,24 @@ function deleteProduct(id: string) {
   }
 }
 
-function saveBudgets(b: Record<Category, number>) {
-  Object.assign(budgets, b)
+function updatePrice(id: string, price: number) {
+  const p = savedProducts.value.find(p => p.id === id)
+  if (!p) return
+  p.price = price
+  p.priceSource = 'user'
+  if (userId.value) {
+    supabase.from('products').update({ price, price_source: 'user' }).eq('id', id).then()
+  }
+}
+
+function deleteAllProducts() {
+  if (!activeFolder.value) return
+  const ids = folderItems.value.map(p => p.id)
+  savedProducts.value = savedProducts.value.filter(p => p.category !== activeFolder.value)
+  showToast('전체 삭제했어요')
+  if (userId.value) {
+    supabase.from('products').delete().in('id', ids).then()
+  }
 }
 
 function openDetailProduct(product: Product) {
@@ -270,6 +300,7 @@ async function startAnalyze(url: string) {
         memo: '',
         savedAt: new Date().toISOString().slice(0, 10),
       })),
+      noProductsReason: data.noProductsReason,
     }
   } catch (err: any) {
     showToast(err.message || '분석 중 오류가 발생했어요')

@@ -3,7 +3,7 @@
     <!-- 헤더 -->
     <div class="bg-paper px-5 py-4 flex items-center gap-3 shadow-paper">
       <button
-        class="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+        class="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500"
         @click="$emit('back')"
       >←</button>
       <h2 class="font-extrabold text-gray-800">내 찜 목록</h2>
@@ -29,6 +29,7 @@
         <ItemStickerCard
           :item-name="p.name"
           :seller="p.seller"
+          :item-code="p.itemCode"
           :category="p.category"
           :estimated-price="p.price"
           :price-source="p.priceSource"

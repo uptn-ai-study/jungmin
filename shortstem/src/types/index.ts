@@ -22,6 +22,7 @@ export interface Product {
   videoUrl?: string
   videoThumbnail?: string
   purchaseUrl?: string | null
+  timestamp?: string | null
   savedAt: string
 }
 
@@ -36,6 +37,7 @@ export interface VideoInfo {
 export interface AnalysisResult {
   video: VideoInfo
   products: Product[]
+  noProductsReason?: 'too_long' | 'not_found'
 }
 
 export interface FolderInfo {

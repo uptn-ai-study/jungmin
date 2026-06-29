@@ -8,6 +8,8 @@ const app = express()
 app.use(express.json())
 app.use(express.static(path.join(__dirname)))
 
+const MAX_VIDEO_SECONDS = 900 // 15분
+
 // ── Helpers ────────────────────────────────────────────────
 
 function extractVideoId(url) {
@@ -23,11 +25,14 @@ function extractVideoId(url) {
   return null
 }
 
+function parseDuration(iso) {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+  if (!m) return 0
+  return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0)
+}
 
-// 자막 가져오기 (YouTube timedtext 공개 엔드포인트)
 async function fetchCaptions(videoId) {
   try {
-    // 한국어 자막 우선, 없으면 영어
     for (const lang of ['ko', 'en']) {
       const res = await fetch(
         `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}&fmt=vtt`,
@@ -36,7 +41,6 @@ async function fetchCaptions(videoId) {
       if (!res.ok) continue
       const text = await res.text()
       if (!text || text.trim().length < 20) continue
-      // VTT 태그·타임스탬프 제거해서 순수 텍스트만
       const clean = text
         .replace(/WEBVTT[\s\S]*?\n\n/, '')
         .replace(/\d{2}:\d{2}:\d{2}\.\d{3} --> [\s\S]*?\n/g, '')
@@ -51,7 +55,6 @@ async function fetchCaptions(videoId) {
   }
 }
 
-// 3순위: 댓글에서 가격 수집
 async function fetchCommentPrices(videoId) {
   try {
     const res = await fetch(
@@ -70,47 +73,77 @@ async function fetchCommentPrices(videoId) {
   }
 }
 
+function buildProductPrompt(title, channelTitle, extraContext) {
+  return `
+【판매처 우선 판단】
+영상 제목, 해시태그, 채널명에서 판매처(스토어명)를 먼저 파악해. 예: "다이소", "올리브영", "무신사" 등이 포함되면 해당 영상의 모든 제품 판매처는 그 스토어야.
 
-// 상품 추출 + 가격 추정 통합 (Gemini 1회 호출)
+【관련성 필터】
+영상 제목: "${title}" / 채널명: "${channelTitle}"
+추출한 상품이 영상 제목·해시태그·채널 주제와 전혀 관련 없으면 결과에 포함하지 마.
+예: 뷰티 영상인데 전자제품이 나오거나, 다이소 영상인데 명품 브랜드 상품이 나오면 제외.
+
+각 상품에 대해 아래 필드를 포함한 JSON 배열로 반환해줘:
+- name: 실제 상품명만. 영상 제목·채널명·해시태그 전체 문구를 그대로 쓰지 마.
+- seller: 브랜드가 아닌 판매처(스토어). 위에서 파악한 판매처를 우선 사용. 모르면 "미확인".
+- category: 생활용품/뷰티/전자기기/식품/패션/기타 중 하나
+- itemCode: 다이소 상품 품번(#12345 또는 품번:12345 형식)이 있으면 문자열, 없으면 null
+- timestamp: 이 상품과 가장 인접한 타임스탬프(예: "1:23", "10:45"). 없으면 null.
+- purchaseUrl: 이 상품의 타임스탬프 바로 아래/위에 붙어있는 URL(http로 시작). 없으면 null.
+- price: 원 단위 정수.
+  1순위: 설명/자막/영상에 가격 명시 → priceSource: "description"
+  2순위: 댓글에 가격 언급 → priceSource: "comment"
+  3순위: 다이소(1000/2000/3000/5000원)처럼 공식 고정가 → priceSource: "known"
+  4순위: 브랜드+종류+카테고리로 시세 추정 → priceSource: "estimated"
+  가격이 0이면 안 됨.
+- priceSource: "description" / "comment" / "known" / "estimated" 중 하나
+
+상품 없으면 [] 반환. JSON 배열만, 마크다운 없이.
+
+${extraContext}`
+}
+
+// description 기반 분석
 async function analyzeWithGemini(title, channelTitle, description, captions, commentPrices) {
-  const prompt = `다음 유튜브 영상에서 추천 상품을 추출하고 가격도 함께 추정해줘.
-
-영상 제목: "${title}"
+  const extraContext = `영상 제목: "${title}"
 채널명: "${channelTitle}"
 영상 설명:
 ${description.slice(0, 4000)}
 ${captions ? `\n영상 자막:\n${captions}` : ''}
 ${commentPrices ? `\n가격 언급 댓글:\n${commentPrices}` : ''}
 
-각 상품에 대해 아래 필드를 포함한 JSON 배열로 반환해줘:
-- name: 실제 상품명만. 영상 제목·채널명·해시태그·설명 문구는 절대 상품명으로 쓰지 마. 자막 우선 참고.
-- seller: 브랜드가 아닌 판매처(스토어). 예: 다이소, 올리브영, 쿠팡, 무신사. 다이소 영상이면 반드시 "다이소". 모르면 "미확인".
-- category: 생활용품/뷰티/전자기기/식품/패션/기타 중 하나
-- itemCode: 다이소 상품의 품번(#12345 또는 품번:12345 형식)이 있으면 문자열, 없으면 null
-- purchaseUrl: 영상 설명에서 이 상품의 구매 링크 URL(http로 시작)이 있으면 문자열, 없으면 null
-- price: 원 단위 정수. 아래 우선순위대로 결정:
-  1순위: 설명 또는 자막에 가격이 명시된 경우 → priceSource: "description"
-  2순위: 댓글에 가격이 언급된 경우 → priceSource: "comment"
-  3순위: 다이소(1000/2000/3000/5000원 균일가)처럼 공식 고정가가 명확한 경우만 → priceSource: "known"
-    (무신사·쿠팡·올리브영·지그재그 등 브랜드/시즌별 가격이 변동하는 판매처는 절대 known 사용 금지)
-  4순위: 설명·자막·제목에서 파악한 브랜드명 + 상품 종류 + 카테고리를 종합해 실제 판매가에 최대한 가까운 시세 추정 → priceSource: "estimated"
-    (예: "무신사 스탠다드 후드집업" → 무신사 스탠다드 브랜드 레인지(3~6만원대) 기반 추정)
-  가격이 0이면 안 됨.
-- priceSource: 위 우선순위에 따라 "description" / "comment" / "known" / "estimated" 중 하나
+영상 설명에 타임스탬프(예: 0:00, 1:23) + 제품명 형식이 있으면 최우선 활용.
+타임스탬프 없어도 설명·자막에서 제품명을 최대한 추출해.`
 
-상품 없으면 [] 반환. JSON 배열만, 마크다운 없이.
+  const prompt = `다음 유튜브 영상에서 추천 상품을 추출하고 가격도 함께 추정해줘.\n\n` +
+    buildProductPrompt(title, channelTitle, extraContext)
 
-예시: [{"name":"전선정리클립","seller":"다이소","category":"생활용품","itemCode":"12345","price":1000,"priceSource":"known"}]`
+  return callGemini({ contents: [{ parts: [{ text: prompt }] }] })
+}
 
+// 영상 직접 분석 (Gemini 멀티모달)
+async function analyzeVideoWithGemini(videoUrl, title, channelTitle) {
+  const prompt = `이 유튜브 영상을 직접 보고 영상에 등장하는 추천 상품을 모두 추출해줘.\n\n` +
+    buildProductPrompt(title, channelTitle,
+      `영상에서 소개되는 제품명, 브랜드, 가격, 타임스탬프를 영상 내용에서 직접 파악해.`)
+
+  return callGemini({
+    contents: [{
+      parts: [
+        { fileData: { mimeType: 'video/*', fileUri: videoUrl } },
+        { text: prompt }
+      ]
+    }]
+  })
+}
+
+async function callGemini(body) {
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1 }
-      })
+      body: JSON.stringify({ ...body, generationConfig: { temperature: 0.1 } })
     }
   )
   if (!res.ok) {
@@ -126,6 +159,22 @@ ${commentPrices ? `\n가격 언급 댓글:\n${commentPrices}` : ''}
   return []
 }
 
+function mapProducts(rawProducts) {
+  return rawProducts.map((p, i) => ({
+    id: 'p_' + Date.now() + '_' + i,
+    name: p.name || '(이름 없음)',
+    seller: p.seller || '미확인',
+    category: p.category || '기타',
+    itemCode: p.itemCode || null,
+    purchaseUrl: p.purchaseUrl || null,
+    timestamp: p.timestamp || null,
+    price: p.price || 0,
+    priceSource: p.priceSource || 'estimated',
+    memo: '',
+    checked: true
+  }))
+}
+
 // ── Main endpoint ───────────────────────────────────────────
 
 app.post('/api/analyze', async (req, res) => {
@@ -136,15 +185,17 @@ app.post('/api/analyze', async (req, res) => {
     const videoId = extractVideoId(url)
     if (!videoId) throw new Error('유효하지 않은 YouTube URL입니다.')
 
-    // YouTube Data API로 영상 정보 가져오기
+    // YouTube Data API - snippet + contentDetails(duration)
     const ytRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${process.env.YOUTUBE_API_KEY}`
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoId}&key=${process.env.YOUTUBE_API_KEY}`
     )
     if (!ytRes.ok) throw new Error('YouTube API 오류: ' + ytRes.status)
     const ytData = await ytRes.json()
     if (!ytData.items?.length) throw new Error('영상을 찾을 수 없습니다.')
 
     const snippet = ytData.items[0].snippet
+    const durationSecs = parseDuration(ytData.items[0].contentDetails?.duration || 'PT0S')
+
     const thumbnail = snippet.thumbnails?.high?.url
       || snippet.thumbnails?.medium?.url
       || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
@@ -154,32 +205,37 @@ app.post('/api/analyze', async (req, res) => {
           .replace(/\. /g, '.').replace(/\.$/, '')
       : new Date().toLocaleDateString('ko-KR')
 
+    const videoInfo = { url, title: snippet.title, thumbnail, channelName: snippet.channelTitle, publishedAt }
+
     // 댓글 + 자막 병렬 수집
     const [commentPrices, captions] = await Promise.all([
       fetchCommentPrices(videoId),
       fetchCaptions(videoId)
     ])
 
-    // 상품 추출 + 가격 추정 통합 1회 호출
-    const rawProducts = await analyzeWithGemini(
+    // 1단계: description 기반 분석
+    const rawFromDesc = await analyzeWithGemini(
       snippet.title, snippet.channelTitle, description, captions, commentPrices
     )
 
-    const products = rawProducts.map((p, i) => ({
-      id: 'p_' + Date.now() + '_' + i,
-      name: p.name || '(이름 없음)',
-      seller: p.seller || '미확인',
-      category: p.category || '기타',
-      itemCode: p.itemCode || null,
-      price: p.price || 0,
-      priceSource: p.priceSource || 'estimated',
-      memo: '',
-      checked: true
-    }))
+    if (rawFromDesc.length > 0) {
+      return res.json({ video: videoInfo, products: mapProducts(rawFromDesc) })
+    }
 
-    res.json({
-      video: { url, title: snippet.title, thumbnail, channelName: snippet.channelTitle, publishedAt },
-      products
+    // 2단계: description에 상품 없음 → 영상 길이 확인
+    if (durationSecs > MAX_VIDEO_SECONDS) {
+      // 15분 초과 → 직접 분석 불가
+      return res.json({ video: videoInfo, products: [], noProductsReason: 'too_long' })
+    }
+
+    // 3단계: 15분 이하 → 영상 직접 분석
+    console.log(`[analyze] description에 상품 없음, 영상 직접 분석 시작 (${Math.round(durationSecs / 60)}분)`)
+    const rawFromVideo = await analyzeVideoWithGemini(url, snippet.title, snippet.channelTitle)
+
+    return res.json({
+      video: videoInfo,
+      products: mapProducts(rawFromVideo),
+      noProductsReason: rawFromVideo.length === 0 ? 'not_found' : undefined
     })
 
   } catch (err) {

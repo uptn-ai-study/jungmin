@@ -3,22 +3,20 @@
     <div
       v-if="product"
       class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-end justify-center"
-      @click.self="$emit('close')"
+      @click.self="handleSave"
     >
       <div class="w-full max-w-[430px] bg-paper rounded-t-3xl px-5 pb-10 pt-3 shadow-paper-lg">
-        <!-- drag handle -->
         <div class="w-10 h-1.5 rounded-full bg-gray-200 mx-auto mb-5" />
 
-        <!-- 헤더 -->
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-black text-gray-900">상품 상세</h3>
           <button
             class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500"
-            @click="$emit('close')"
+            @click="handleSave"
           >✕</button>
         </div>
 
-        <!-- 출처 영상 (videoTitle 있을 때만) -->
+        <!-- 출처 영상 -->
         <div v-if="product.videoTitle" class="mb-4">
           <label class="text-xs font-semibold text-gray-400 mb-1 block">출처 영상</label>
           <a
@@ -34,63 +32,52 @@
         <!-- 편집 필드 -->
         <div class="flex flex-col gap-3">
           <div>
+            <label class="text-xs font-semibold text-gray-400 mb-1 block">구매 링크</label>
+            <div class="flex items-center gap-2">
+              <input
+                v-model="draft.purchaseUrl"
+                class="flex-1 h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white truncate"
+                placeholder="구매 링크를 직접 입력할 수 있어요"
+              />
+              <button
+                v-if="draft.purchaseUrl"
+                class="text-sm font-medium text-[#B088FF] flex-shrink-0"
+                @click="window.open(draft.purchaseUrl!, '_blank')"
+              >↗</button>
+            </div>
+          </div>
+          <div>
             <label class="text-xs font-semibold text-gray-400 mb-1 block">상품명</label>
-            <input
-              v-model="draft.name"
-              class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white"
-            />
+            <input v-model="draft.name" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-400 mb-1 block">판매처</label>
+            <input v-model="draft.seller" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
+          </div>
+          <div v-if="draft.seller === '다이소'">
+            <label class="text-xs font-semibold text-gray-400 mb-1 block">품번</label>
             <input
-              v-model="draft.seller"
+              v-model="draft.itemCode"
               class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white"
+              placeholder="예) 12345"
             />
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-400 mb-1 block">가격 (원)</label>
-            <input
-              v-model.number="draft.price"
-              type="number"
-              class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white"
-            />
+            <input v-model.number="draft.price" type="number" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" />
           </div>
           <div>
             <label class="text-xs font-semibold text-gray-400 mb-1 block">메모</label>
-            <input
-              v-model="draft.memo"
-              class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white"
-              placeholder="선택사항"
-            />
+            <input v-model="draft.memo" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" placeholder="선택사항" />
           </div>
         </div>
 
-        <!-- 구매 링크 (있을 때만) / 없으면 찜하기 -->
-        <a
-          v-if="product.purchaseUrl"
-          :href="product.purchaseUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="w-full mt-4 py-3 rounded-xl text-sm font-bold text-center block bg-gray-900 text-white"
-        >🛒 구매하러 가기</a>
+        <!-- 찜하기 -->
         <button
-          v-else
-          class="w-full mt-4 py-3 rounded-xl text-sm font-bold transition-colors"
+          class="w-full mt-4 py-3.5 rounded-2xl text-sm font-bold transition-transform active:scale-95"
           :class="draft.isLiked ? 'bg-pink-100 text-pink-500' : 'bg-gray-100 text-gray-500'"
           @click="handleToggleLike"
         >{{ draft.isLiked ? '❤️ 찜됨' : '🤍 찜하기' }}</button>
-
-        <!-- 저장/취소 -->
-        <div class="flex gap-2.5 mt-3">
-          <button
-            class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-500 font-bold text-sm"
-            @click="$emit('close')"
-          >취소</button>
-          <button
-            class="flex-1 py-3 rounded-xl bg-gray-900 text-white font-bold text-sm"
-            @click="handleSave"
-          >저장</button>
-        </div>
       </div>
     </div>
   </Transition>
@@ -98,6 +85,9 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import AppButton from './AppButton.vue'
+
+const window = globalThis.window
 import type { Product } from '../types'
 
 const props = defineProps<{ product: Product | null }>()
