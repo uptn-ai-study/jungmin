@@ -2,23 +2,14 @@
   <div class="min-h-screen bg-cream flex justify-center">
     <div class="w-full max-w-[430px] min-h-screen bg-cream relative overflow-x-hidden">
 
-      <!-- 콘텐츠 영역 -->
-      <!-- 홈 (보관함 탭) -->
+      <!-- 홈 -->
       <HomeScreen
-        v-if="activeTab === 'home' && !subScreen"
+        v-if="!subScreen"
         :all-products="savedProducts"
         :analyzing="analyzing"
         @analyze="startAnalyze"
         @open-video="openVideo"
-      />
-
-      <!-- 마이 탭 -->
-      <MyScreen
-        v-else-if="activeTab === 'my' && !subScreen"
-        :all-products="savedProducts"
         @open-folder="openFolder"
-        @open-liked="subScreen = 'liked'"
-        @open-product="openDetailProduct"
       />
 
       <!-- 분석 결과 -->
@@ -28,7 +19,6 @@
         :analyzing="analyzing"
         @back="subScreen = null"
         @save="saveProducts"
-        @edit-product="openDetailProduct"
       />
 
       <!-- 폴더 상세 -->
@@ -38,7 +28,6 @@
         :items="folderItems"
         :budget="budgets[activeFolder] ?? 0"
         @back="subScreen = null"
-        @toggle-like="toggleLike"
         @delete-product="deleteProduct"
         @delete-all-products="deleteAllProducts"
         @update-price="updatePrice"
@@ -52,43 +41,16 @@
         :video-url="activeVideoUrl"
         :products="videoItems"
         @back="subScreen = null"
-        @toggle-like="toggleLike"
         @delete-product="deleteProduct"
         @update-price="updatePrice"
         @open-product="openDetailProduct"
       />
 
-      <!-- 찜 목록 -->
-      <LikedScreen
-        v-else-if="subScreen === 'liked'"
-        :all-products="savedProducts"
-        @back="subScreen = null"
-        @toggle-like="toggleLike"
-        @open-product="openDetailProduct"
-      />
-
-      <!-- 하단 탭 바 (서브스크린 아닐때만) -->
-      <nav
-        v-if="!subScreen"
-        class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-paper border-t border-gray-100 flex z-50"
-        style="padding-bottom: env(safe-area-inset-bottom)"
-      >
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="flex-1 flex flex-col items-center py-3 gap-0.5 transition-colors"
-          :class="activeTab === tab.key ? 'text-gray-900' : 'text-gray-300'"
-          @click="activeTab = tab.key"
-        >
-          <span class="text-sm font-bold tracking-wide">{{ tab.label }}</span>
-        </button>
-      </nav>
-
       <!-- 토스트 -->
       <Transition name="toast">
         <div
           v-if="toastMsg"
-          class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-paper-lg whitespace-nowrap z-[300]"
+          class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-sm font-semibold px-5 py-3 rounded-xl shadow-paper-lg whitespace-nowrap z-[300]"
         >{{ toastMsg }}</div>
       </Transition>
 
@@ -97,7 +59,6 @@
         :product="detailProduct"
         @close="detailProduct = null"
         @save="applyEdit"
-        @toggle-like="toggleLike"
       />
 
     </div>
@@ -107,19 +68,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import HomeScreen from './screens/HomeScreen.vue'
-import MyScreen from './screens/MyScreen.vue'
 import AnalysisScreen from './screens/AnalysisScreen.vue'
 import FolderDetailScreen from './screens/FolderDetailScreen.vue'
-import LikedScreen from './screens/LikedScreen.vue'
 import VideoDetailScreen from './screens/VideoDetailScreen.vue'
 import ProductDetailSheet from './components/ProductDetailSheet.vue'
 import { supabase } from './lib/supabase'
 import type { Product, Category, AnalysisResult } from './types'
 
-type Tab = 'home' | 'my'
-type SubScreen = 'analyze' | 'folder' | 'liked' | 'video' | null
+type SubScreen = 'analyze' | 'folder' | 'video' | null
 
-const activeTab = ref<Tab>('home')
 const subScreen = ref<SubScreen>(null)
 const analyzing = ref(false)
 const analysisResult = ref<AnalysisResult | null>(null)
@@ -129,6 +86,8 @@ const activeVideoUrl = ref<string | null>(null)
 const toastMsg = ref<string | null>(null)
 const detailProduct = ref<Product | null>(null)
 const userId = ref<string | null>(null)
+const budgets = ref<Record<string, number>>({})
+const budgetSheetOpen = ref(false)
 
 function fromRow(row: any): Product {
   return {
@@ -141,8 +100,6 @@ function fromRow(row: any): Product {
     priceSource: row.price_source,
     priority: row.priority,
     memo: row.memo,
-    isLiked: row.is_liked,
-    status: row.status,
     videoTitle: row.video_title ?? undefined,
     videoUrl: row.video_url ?? undefined,
     videoThumbnail: row.video_thumbnail ?? undefined,
@@ -164,8 +121,6 @@ function toRow(p: Product) {
     price_source: p.priceSource,
     priority: p.priority,
     memo: p.memo,
-    is_liked: p.isLiked,
-    status: p.status,
     video_title: p.videoTitle ?? null,
     video_url: p.videoUrl ?? null,
     video_thumbnail: p.videoThumbnail ?? null,
@@ -175,35 +130,25 @@ function toRow(p: Product) {
   }
 }
 
-const tabs = [
-  { key: 'home' as Tab, label: '홈' },
-  { key: 'my' as Tab, label: '마이' },
-]
-
 const folderItems = computed(() =>
-  activeFolder.value
-    ? savedProducts.value.filter(p => p.category === activeFolder.value)
-    : []
+  activeFolder.value ? savedProducts.value.filter(p => p.category === activeFolder.value) : []
 )
-
 const videoItems = computed(() =>
-  activeVideoUrl.value
-    ? savedProducts.value.filter(p => p.videoUrl === activeVideoUrl.value)
-    : []
+  activeVideoUrl.value ? savedProducts.value.filter(p => p.videoUrl === activeVideoUrl.value) : []
 )
 
 onMounted(async () => {
-  let { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    const { data } = await supabase.auth.signInAnonymously()
-    session = data.session
+  let id = localStorage.getItem('shortstem_user_id')
+  if (!id) {
+    id = crypto.randomUUID()
+    localStorage.setItem('shortstem_user_id', id)
   }
-  if (!session) return
-  userId.value = session.user.id
+  userId.value = id
 
   const { data } = await supabase
     .from('products')
     .select('*')
+    .eq('user_id', id)
     .order('created_at', { ascending: false })
   if (data) savedProducts.value = data.map(fromRow)
 })
@@ -223,21 +168,10 @@ function openVideo(videoUrl: string) {
   subScreen.value = 'video'
 }
 
-function toggleLike(id: string) {
-  const p = savedProducts.value.find(p => p.id === id)
-  if (!p) return
-  p.isLiked = !p.isLiked
-  if (userId.value) {
-    supabase.from('products').update({ is_liked: p.isLiked }).eq('id', id).then()
-  }
-}
-
 function deleteProduct(id: string) {
   savedProducts.value = savedProducts.value.filter(p => p.id !== id)
   showToast('삭제했어요')
-  if (userId.value) {
-    supabase.from('products').delete().eq('id', id).then()
-  }
+  if (userId.value) supabase.from('products').delete().eq('id', id).then()
 }
 
 function updatePrice(id: string, price: number) {
@@ -245,9 +179,7 @@ function updatePrice(id: string, price: number) {
   if (!p) return
   p.price = price
   p.priceSource = 'user'
-  if (userId.value) {
-    supabase.from('products').update({ price, price_source: 'user' }).eq('id', id).then()
-  }
+  if (userId.value) supabase.from('products').update({ price, price_source: 'user' }).eq('id', id).then()
 }
 
 function deleteAllProducts() {
@@ -255,9 +187,7 @@ function deleteAllProducts() {
   const ids = folderItems.value.map(p => p.id)
   savedProducts.value = savedProducts.value.filter(p => p.category !== activeFolder.value)
   showToast('전체 삭제했어요')
-  if (userId.value) {
-    supabase.from('products').delete().in('id', ids).then()
-  }
+  if (userId.value) supabase.from('products').delete().in('id', ids).then()
 }
 
 function openDetailProduct(product: Product) {
@@ -269,9 +199,7 @@ function applyEdit(edited: Product) {
   if (idx !== -1) {
     const updated = { ...edited, priceSource: 'user' as const }
     savedProducts.value[idx] = updated
-    if (userId.value) {
-      supabase.from('products').update(toRow(updated)).eq('id', updated.id).then()
-    }
+    if (userId.value) supabase.from('products').update(toRow(updated)).eq('id', updated.id).then()
   }
   detailProduct.value = null
 }
@@ -280,7 +208,6 @@ async function startAnalyze(url: string) {
   subScreen.value = 'analyze'
   analyzing.value = true
   analysisResult.value = null
-
   try {
     const res = await fetch('/api/analyze', {
       method: 'POST',
@@ -289,14 +216,11 @@ async function startAnalyze(url: string) {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || '분석 실패')
-
     analysisResult.value = {
       video: data.video,
       products: data.products.map((p: any) => ({
         ...p,
         priority: 'medium' as const,
-        isLiked: false,
-        status: 'saved' as const,
         memo: '',
         savedAt: new Date().toISOString().slice(0, 10),
       })),
@@ -311,26 +235,14 @@ async function startAnalyze(url: string) {
 }
 
 function saveProducts(products: Product[]) {
-  const video = analysisResult.value?.video
-  const enriched = products.map(p => ({
-    ...p,
-    videoTitle: video?.title,
-    videoUrl: video?.url,
-    videoThumbnail: video?.thumbnail,
-  }))
-  savedProducts.value.unshift(...enriched)
-  showToast(`${enriched.length}개 저장됐어요`)
+  savedProducts.value.unshift(...products)
+  showToast(`${products.length}개 저장됐어요`)
   subScreen.value = null
-  if (userId.value) {
-    supabase.from('products').insert(enriched.map(toRow)).then()
-  }
+  if (userId.value) supabase.from('products').insert(products.map(toRow)).then()
 }
 </script>
 
 <style>
 .toast-enter-active, .toast-leave-active { transition: all 0.25s ease; }
 .toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, 8px); }
-
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

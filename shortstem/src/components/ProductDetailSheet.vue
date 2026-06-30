@@ -72,12 +72,6 @@
           </div>
         </div>
 
-        <!-- 찜하기 -->
-        <button
-          class="w-full mt-4 py-3.5 rounded-2xl text-sm font-bold transition-transform active:scale-95"
-          :class="draft.isLiked ? 'bg-pink-100 text-pink-500' : 'bg-gray-100 text-gray-500'"
-          @click="handleToggleLike"
-        >{{ draft.isLiked ? '❤️ 찜됨' : '🤍 찜하기' }}</button>
       </div>
     </div>
   </Transition>
@@ -95,7 +89,6 @@ const props = defineProps<{ product: Product | null }>()
 const emit = defineEmits<{
   close: []
   save: [edited: Product]
-  toggleLike: [id: string]
 }>()
 
 const draft = ref<Product>({} as Product)
@@ -105,11 +98,6 @@ watch(
   (p) => { if (p) draft.value = { ...p } },
   { immediate: true }
 )
-
-function handleToggleLike() {
-  draft.value.isLiked = !draft.value.isLiked
-  emit('toggleLike', draft.value.id)
-}
 
 function handleSave() {
   emit('save', { ...draft.value, priceSource: 'user' })

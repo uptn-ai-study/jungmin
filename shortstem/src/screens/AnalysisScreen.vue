@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col min-h-full">
-    <!-- 네비 헤더 -->
+    <!-- 헤더 -->
     <div class="bg-paper px-5 py-4 flex items-center gap-3 shadow-paper">
       <button
         class="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500"
@@ -37,7 +37,7 @@
         </div>
       </div>
 
-      <!-- 제품 없음 빈 상태 -->
+      <!-- 제품 없음 -->
       <div v-if="products.length === 0" class="flex flex-col items-center py-16 text-center px-8">
         <span class="text-5xl mb-4">{{ noProductsReason === 'too_long' ? '⏱️' : '🔍' }}</span>
         <p class="font-black text-gray-700">
@@ -54,37 +54,42 @@
       </div>
 
       <template v-else>
-        <!-- 제품 수 안내 -->
-        <div class="px-5 py-3">
-          <p class="text-sm font-semibold text-gray-500">{{ products.length }}개 제품을 찾았어요</p>
+        <!-- 전체선택 + 개수 -->
+        <div class="px-5 py-3 flex items-center justify-between">
+          <p class="text-sm font-semibold text-gray-500">{{ products.length }}개 제품 발견</p>
+          <button class="text-sm font-bold text-gray-700" @click="toggleAll">
+            {{ allSelected ? '전체 해제' : '전체 선택' }}
+          </button>
         </div>
 
         <!-- 제품 목록 -->
-        <div class="px-5 flex flex-col gap-4 pb-4">
-          <div v-for="p in products" :key="p.id">
-            <!-- 타임스탬프 뱃지 (우측 정렬) -->
-            <div v-if="p.timestamp" class="flex justify-end mb-1.5">
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-900 text-white text-[11px] font-bold">
-                ▶ {{ p.timestamp }}
-              </span>
+        <div class="px-5 flex flex-col gap-3 pb-4">
+          <div
+            v-for="p in products"
+            :key="p.id"
+            class="bg-paper rounded-2xl p-4 shadow-paper flex items-start gap-3 cursor-pointer"
+            @click="toggleSelect(p.id)"
+          >
+            <!-- 체크박스 -->
+            <div
+              class="w-6 h-6 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors"
+              :class="selected.has(p.id) ? 'bg-gray-900 border-gray-900' : 'border-gray-300'"
+            >
+              <span v-if="selected.has(p.id)" class="text-white text-xs font-bold">✓</span>
             </div>
 
-            <div class="bg-paper rounded-2xl p-4 shadow-paper">
-              <div class="flex items-start justify-between gap-3">
-                <div class="flex-1 min-w-0">
-                  <div class="text-sm font-black text-gray-900">{{ p.name }}</div>
-                  <div class="text-xs font-medium text-gray-400 mt-0.5">
-                    {{ p.seller }}
-                    <span v-if="p.itemCode && p.seller === '다이소'"> · #{{ p.itemCode }}</span>
-                  </div>
-                </div>
-                <button
-                  class="text-gray-300 text-sm flex-shrink-0"
-                  @click="$emit('editProduct', p)"
-                >✎</button>
+            <div class="flex-1 min-w-0">
+              <div v-if="p.timestamp" class="mb-1">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-900 text-white text-[11px] font-bold">
+                  ▶ {{ p.timestamp }}
+                </span>
               </div>
-
-              <div class="mt-2.5 flex items-center gap-2">
+              <div class="text-sm font-black text-gray-900">{{ p.name }}</div>
+              <div class="text-xs font-medium text-gray-400 mt-0.5">
+                {{ p.seller }}
+                <span v-if="p.itemCode && p.seller === '다이소'"> · #{{ p.itemCode }}</span>
+              </div>
+              <div class="mt-1.5 flex items-center gap-2">
                 <span class="text-sm font-black text-gray-900">₩{{ p.price.toLocaleString() }}</span>
                 <span v-if="p.priceSource === 'estimated' || p.priceSource === 'known'" class="text-[11px] font-medium text-gray-400">AI추정</span>
               </div>
@@ -92,10 +97,12 @@
           </div>
         </div>
 
-        <!-- 저장 버튼 -->
+        <!-- 하단 버튼 -->
         <div class="px-5 mt-2 mb-8 flex gap-2.5">
           <AppButton variant="secondary" @click="$emit('back')">취소</AppButton>
-          <AppButton @click="save">타임라인 저장하기</AppButton>
+          <AppButton :disabled="selected.size === 0" @click="save">
+            {{ selected.size > 0 ? `${selected.size}개 저장하기` : '저장하기' }}
+          </AppButton>
         </div>
       </template>
     </template>
@@ -103,8 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { ref } from 'vue'
+import { computed, watch, ref } from 'vue'
 import AppButton from '../components/AppButton.vue'
 import type { AnalysisResult, Product } from '../types'
 
@@ -113,22 +119,41 @@ const props = defineProps<{
   analyzing: boolean
 }>()
 
-const noProductsReason = computed(() => props.result?.noProductsReason)
-
 const emit = defineEmits<{
   back: []
   save: [products: Product[]]
-  editProduct: [product: Product]
 }>()
 
 const products = ref<Product[]>([])
+const selected = ref<Set<string>>(new Set())
 
 watch(() => props.result, (v) => {
-  if (v) products.value = v.products.map(p => ({ ...p }))
+  if (v) {
+    products.value = v.products.map(p => ({ ...p }))
+    selected.value = new Set(v.products.map(p => p.id))
+  }
 }, { immediate: true })
 
+const noProductsReason = computed(() => props.result?.noProductsReason)
+const allSelected = computed(() => products.value.length > 0 && products.value.every(p => selected.value.has(p.id)))
+
+function toggleSelect(id: string) {
+  const s = new Set(selected.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  selected.value = s
+}
+
+function toggleAll() {
+  if (allSelected.value) {
+    selected.value = new Set()
+  } else {
+    selected.value = new Set(products.value.map(p => p.id))
+  }
+}
+
 function save() {
-  const enriched = products.value.map(p => ({
+  const toSave = products.value.filter(p => selected.value.has(p.id))
+  const enriched = toSave.map(p => ({
     ...p,
     videoTitle: props.result?.video.title,
     videoUrl: props.result?.video.url,

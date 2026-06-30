@@ -69,9 +69,7 @@
             :memo="p.memo"
             :source-title="p.videoTitle"
             :source-url="p.videoUrl"
-            :is-liked="p.isLiked"
             :rotate="0"
-            @toggle-like="$emit('toggleLike', p.id)"
             @update-price="(price) => $emit('updatePrice', p.id, price)"
             @click="$emit('openProduct', p)"
           />
@@ -81,12 +79,6 @@
           >✕</button>
         </div>
       </template>
-
-      <!-- 빈 상태 (찜 필터 시) -->
-      <div v-else-if="sortKey === 'liked'" class="flex flex-col items-center py-16 text-center">
-        <span class="text-5xl mb-4">🤍</span>
-        <p class="font-black text-gray-800">찜한 상품이 없어요</p>
-      </div>
 
       <!-- 빈 상태 -->
       <div v-else class="flex flex-col items-center py-16 text-center">
@@ -105,13 +97,12 @@ import ItemStickerCard from '../components/ItemStickerCard.vue'
 import { FOLDER_CATEGORIES } from '../data/mockData'
 import type { Product, Category } from '../types'
 
-type SortKey = 'savedAt' | 'price_asc' | 'price_desc' | 'liked'
+type SortKey = 'savedAt' | 'price_asc' | 'price_desc'
 
 const SORT_LABELS: Record<SortKey, string> = {
   savedAt: '최신순',
   price_asc: '낮은 가격순',
   price_desc: '높은 가격순',
-  liked: '찜한 것만',
 }
 
 const props = defineProps<{
@@ -122,7 +113,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   back: []
-  toggleLike: [id: string]
   deleteProduct: [id: string]
   deleteAllProducts: []
   updatePrice: [id: string, price: number]
@@ -151,7 +141,6 @@ onUnmounted(() => document.removeEventListener('click', onClickOutside))
 
 const sortedItems = computed(() => {
   const list = [...props.items]
-  if (sortKey.value === 'liked') return list.filter(p => p.isLiked)
   if (sortKey.value === 'price_asc') return list.sort((a, b) => a.price - b.price)
   if (sortKey.value === 'price_desc') return list.sort((a, b) => b.price - a.price)
   return list.sort((a, b) => b.savedAt.localeCompare(a.savedAt))

@@ -56,10 +56,8 @@
             :memo="p.memo"
             :source-title="p.videoTitle"
             :source-url="p.videoUrl"
-            :is-liked="p.isLiked"
             :rotate="0"
             :flat="true"
-            @toggle-like="$emit('toggleLike', p.id)"
             @update-price="(price) => $emit('updatePrice', p.id, price)"
           />
         </div>
@@ -99,7 +97,6 @@ const props = defineProps<{
 
 defineEmits<{
   back: []
-  toggleLike: [id: string]
   deleteProduct: [id: string]
   updatePrice: [id: string, price: number]
   openProduct: [product: Product]

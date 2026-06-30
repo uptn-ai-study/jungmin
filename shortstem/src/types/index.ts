@@ -1,10 +1,6 @@
 export type Category = '뷰티' | '전자기기' | '생활용품' | '식품' | '패션' | '기타'
-
 export type PriceSource = 'description' | 'comment' | 'known' | 'estimated' | 'user'
-
 export type Priority = 'high' | 'medium' | 'low'
-
-export type ItemStatus = 'saved' | 'liked' | 'purchased'
 
 export interface Product {
   id: string
@@ -16,8 +12,6 @@ export interface Product {
   priceSource: PriceSource
   priority: Priority
   memo: string
-  isLiked: boolean
-  status: ItemStatus
   videoTitle?: string
   videoUrl?: string
   videoThumbnail?: string

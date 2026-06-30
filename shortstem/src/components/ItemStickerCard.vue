@@ -1,13 +1,5 @@
 <template>
   <div :class="flat ? 'relative p-4' : 'relative bg-paper rounded-2xl p-4 shadow-paper'">
-    <!-- 찜 버튼 -->
-    <button
-      class="absolute top-4 right-4 text-base transition-transform duration-150 hover:scale-125 active:scale-95"
-      @click.stop="$emit('toggleLike')"
-    >
-      {{ isLiked ? '❤️' : '🤍' }}
-    </button>
-
     <!-- 카테고리 뱃지 -->
     <div class="mb-2.5">
       <span class="tag-label" :class="categoryTag">{{ category }}</span>
@@ -68,13 +60,11 @@ const props = defineProps<{
   memo?: string
   sourceTitle?: string
   sourceUrl?: string
-  isLiked: boolean
   rotate?: number
   flat?: boolean
 }>()
 
 const emit = defineEmits<{
-  toggleLike: []
   updatePrice: [price: number]
 }>()
 

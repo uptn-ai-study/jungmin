@@ -1,26 +1,25 @@
 <template>
-  <div class="flex flex-col h-full overflow-y-auto pb-20">
+  <div class="flex flex-col min-h-full overflow-y-auto pb-8">
 
-    <!-- 섹션 1: 헤더 + URL 입력 -->
+    <!-- URL 입력 헤더 -->
     <div class="bg-paper px-5 pt-10 pb-5 border-b border-gray-100 flex-shrink-0">
       <div class="mb-5">
-        <h1 class="text-2xl font-black text-gray-900 tracking-tight">쇼츠템</h1>
+        <h1 class="text-2xl font-black text-gray-900 tracking-tight">픽템</h1>
         <p class="text-sm font-medium text-gray-500 mt-1">유튜브 링크를 붙여넣으면 추천템을 자동으로 정리해줘요</p>
       </div>
       <UrlInputBox :loading="analyzing" @analyze="$emit('analyze', $event)" />
     </div>
 
-    <!-- 섹션 2: 최근 분석 영상 -->
-    <div class="pt-5 flex-shrink-0">
-      <div class="px-5 mb-3">
-        <h2 class="text-base font-black text-gray-900">최근 분석 영상</h2>
-      </div>
-      <div v-if="recentVideos.length === 0" class="mx-5 py-6 rounded-2xl bg-gray-50 flex flex-col items-center gap-1.5">
-        <span class="text-3xl">🎬</span>
-        <p class="text-xs font-bold text-gray-400">아직 분석한 영상이 없어요</p>
-        <p class="text-[11px] font-medium text-gray-300">위 링크창에 유튜브 URL을 붙여넣어 보세요</p>
-      </div>
-      <div v-else class="flex gap-3 overflow-x-auto no-scrollbar px-5 pb-2" style="scroll-snap-type: x mandatory;">
+    <!-- 최근 분석 영상 (접기/펼치기) -->
+    <div v-if="recentVideos.length > 0" class="flex-shrink-0 border-b border-gray-100">
+      <button
+        class="w-full px-5 py-3 flex items-center justify-between"
+        @click="videosOpen = !videosOpen"
+      >
+        <span class="text-sm font-bold text-gray-500">🕒 최근 분석 영상</span>
+        <span class="text-xs text-gray-400">{{ videosOpen ? '접기 ▲' : '펼치기 ▼' }}</span>
+      </button>
+      <div v-if="videosOpen" class="flex gap-3 overflow-x-auto no-scrollbar px-5 pb-4" style="scroll-snap-type: x mandatory;">
         <div
           v-for="v in recentVideos"
           :key="v.url"
@@ -40,13 +39,58 @@
       </div>
     </div>
 
+    <!-- 저장한 제품 (카테고리별) -->
+    <div class="px-5 pt-5">
+      <h2 class="text-base font-black text-gray-900 mb-4">📦 저장한 제품</h2>
+
+      <!-- 빈 상태 -->
+      <div v-if="allProducts.length === 0" class="py-10 flex flex-col items-center gap-2">
+        <span class="text-4xl">📭</span>
+        <p class="text-sm font-bold text-gray-400">아직 저장한 제품이 없어요</p>
+        <p class="text-xs font-medium text-gray-300">위에서 유튜브 링크를 분석해보세요</p>
+      </div>
+
+      <!-- 카테고리별 섹션 -->
+      <div v-else class="flex flex-col gap-6">
+        <div v-for="cat in activeCategories" :key="cat.key">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-bold text-gray-700">{{ cat.emoji }} {{ cat.label }}</span>
+            <button class="text-xs font-semibold text-gray-400" @click="$emit('openFolder', cat.key)">
+              전체보기 →
+            </button>
+          </div>
+          <div class="flex flex-col gap-2">
+            <div
+              v-for="p in productsByCategory(cat.key).slice(0, 3)"
+              :key="p.id"
+              class="bg-paper rounded-xl px-4 py-3 shadow-paper flex items-center gap-3"
+            >
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-gray-900 truncate">{{ p.name }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ p.seller }}</p>
+              </div>
+              <p class="text-sm font-black text-gray-800 flex-shrink-0">₩{{ p.price.toLocaleString() }}</p>
+            </div>
+            <button
+              v-if="productsByCategory(cat.key).length > 3"
+              class="text-xs font-semibold text-gray-400 text-center py-1"
+              @click="$emit('openFolder', cat.key)"
+            >
+              +{{ productsByCategory(cat.key).length - 3 }}개 더보기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import UrlInputBox from '../components/UrlInputBox.vue'
-import type { Product } from '../types'
+import { FOLDER_CATEGORIES } from '../data/mockData'
+import type { Product, Category } from '../types'
 
 const props = defineProps<{
   allProducts: Product[]
@@ -56,7 +100,10 @@ const props = defineProps<{
 defineEmits<{
   analyze: [url: string]
   openVideo: [videoUrl: string]
+  openFolder: [category: Category]
 }>()
+
+const videosOpen = ref(false)
 
 const recentVideos = computed(() => {
   const seen = new Set<string>()
@@ -70,6 +117,13 @@ const recentVideos = computed(() => {
   }
   return result
 })
+
+const productsByCategory = (key: Category) =>
+  props.allProducts.filter(p => p.category === key)
+
+const activeCategories = computed(() =>
+  FOLDER_CATEGORIES.filter(cat => productsByCategory(cat.key).length > 0)
+)
 </script>
 
 <style scoped>

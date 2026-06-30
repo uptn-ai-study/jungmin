@@ -1,0 +1,6 @@
+python-telegram-bot==21.6
+google-generativeai
+python-dotenv
+feedparser
+httpx
+apscheduler
