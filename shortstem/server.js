@@ -293,4 +293,4 @@ app.post('/api/analyze', async (req, res) => {
 })
 
 const PORT = process.env.PORT || 5176
-app.listen(PORT, () => console.log(`쇼츠템 서버 실행 중 → http://localhost:${PORT}`))
+app.listen(PORT, () => console.log(`추천템모아 서버 실행 중 → http://localhost:${PORT}`))

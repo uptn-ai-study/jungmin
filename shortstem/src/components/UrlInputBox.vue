@@ -9,7 +9,7 @@
         ref="inputRef"
         v-model="inputValue"
         type="text"
-        placeholder="유튜브 링크를 붙여넣으세요"
+        placeholder="유튜브 링크를 붙여넣어 분석해 보세요"
         class="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder-gray-300 font-medium"
         @keydown.enter="submit"
       />
@@ -20,7 +20,7 @@
       >✕</button>
     </div>
 
-    <!-- 정리하기 버튼 -->
+    <!-- 분석하기 버튼 -->
     <AppButton
       class="mt-2"
       :disabled="!inputValue || loading"
@@ -28,7 +28,7 @@
       @click="submit"
     >
       <template #loading>분석 중...</template>
-      정리하기
+      분석하기
     </AppButton>
   </div>
 </template>

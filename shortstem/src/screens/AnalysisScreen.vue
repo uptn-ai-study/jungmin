@@ -94,7 +94,7 @@
                 <span v-if="p.itemCode && p.seller === '다이소'"> · #{{ p.itemCode }}</span>
               </div>
               <div class="mt-1.5 flex items-center gap-2">
-                <span class="text-sm font-black text-gray-900">₩{{ p.price.toLocaleString() }}</span>
+                <span class="text-sm font-medium text-gray-900">₩{{ p.price.toLocaleString() }}</span>
                 <span v-if="p.priceSource === 'estimated' || p.priceSource === 'known'" class="text-[11px] font-medium text-gray-400">AI추정</span>
                 <a
                   v-if="p.purchaseUrl"

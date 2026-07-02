@@ -34,8 +34,8 @@
       <!-- URL 입력 헤더 -->
       <div class="bg-paper px-5 pt-10 pb-5 border-b border-gray-100 flex-shrink-0">
         <div class="mb-5">
-          <h1 class="text-2xl font-black text-gray-900 tracking-tight">유튜브픽템</h1>
-          <p class="text-sm font-medium text-gray-500 mt-1">유튜브 링크를 넣으면 영상 속 템들을 AI가 정리해줘요.</p>
+          <h1 class="text-2xl font-title font-bold text-gray-900 tracking-tight">추천템모아</h1>
+          <p class="text-sm font-medium text-gray-500 mt-1">유튜브 영상 속 추천템들을 AI가 분석해서 보여줘요</p>
         </div>
         <UrlInputBox :loading="analyzing" @analyze="$emit('analyze', $event)" />
       </div>
@@ -78,7 +78,7 @@
 
       <!-- 저장한 제품 -->
       <div class="px-5 pt-5">
-        <h2 class="text-base font-black text-gray-900 mb-4">저장한 제품</h2>
+        <h2 class="text-base font-black text-gray-900 mb-4">내가 모은 추천템</h2>
 
         <!-- 카테고리 폴더 2x3 그리드 -->
         <div class="grid grid-cols-3 gap-3">
@@ -98,7 +98,7 @@
                 <span class="text-2xl" :style="{ opacity: productsByCategory(cat.key).length === 0 ? 0.3 : 1 }">{{ cat.emoji }}</span>
                 <div
                   v-if="productsByCategory(cat.key).length > 0"
-                  class="absolute -top-2 -right-1 min-w-5 h-5 px-1 rounded-full bg-white shadow-paper flex items-center justify-center"
+                  class="absolute -top-2 -right-1 min-w-5 h-5 px-1 rounded-full bg-white border border-black flex items-center justify-center"
                 >
                   <span class="text-[10px] font-black text-gray-700">{{ productsByCategory(cat.key).length }}</span>
                 </div>

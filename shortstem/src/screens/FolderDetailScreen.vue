@@ -18,7 +18,7 @@
         >{{ SORT_LABELS[sortKey] }} ▾</button>
         <div
           v-if="sortOpen"
-          class="absolute right-0 top-6 bg-white rounded-xl shadow-lg z-10 min-w-[120px] overflow-hidden"
+          class="absolute right-0 top-6 bg-white rounded-xl shadow-lg z-50 min-w-[120px] overflow-hidden"
         >
           <div
             v-for="(label, key) in SORT_LABELS"
@@ -105,7 +105,7 @@
       <div v-else class="flex flex-col items-center py-16 text-center">
         <span class="text-5xl mb-4">{{ folder?.emoji }}</span>
         <p class="font-black text-gray-800">아직 비어있어요</p>
-        <p class="text-sm font-medium text-gray-400 mt-1.5">홈에서 유튜브 링크를 정리해보세요</p>
+        <p class="text-sm font-medium text-gray-400 mt-1.5">{{ folder?.label }}템을 저장해 보세요.</p>
       </div>
     </div>
   </div>

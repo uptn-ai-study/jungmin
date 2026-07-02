@@ -26,6 +26,7 @@ export default {
       },
       fontFamily: {
         sans: ['Nunito', 'SUIT Variable', 'SUIT', '-apple-system', 'sans-serif'],
+        title: ['OkDanDan', 'Nunito', 'sans-serif'],
       },
       borderRadius: {
         'xl': '16px',
