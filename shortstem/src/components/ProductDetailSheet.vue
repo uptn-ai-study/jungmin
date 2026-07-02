@@ -3,16 +3,16 @@
     <div
       v-if="product"
       class="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-end justify-center"
-      @click.self="handleSave"
+      @click.self="$emit('close')"
     >
       <div class="w-full max-w-[430px] bg-paper rounded-t-3xl px-5 pb-10 pt-3 shadow-paper-lg">
         <div class="w-10 h-1.5 rounded-full bg-gray-200 mx-auto mb-5" />
 
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-black text-gray-900">상품 상세</h3>
+          <h3 class="text-lg font-black text-gray-900">상품 수정</h3>
           <button
             class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500"
-            @click="handleSave"
+            @click="$emit('close')"
           >✕</button>
         </div>
 
@@ -70,6 +70,12 @@
             <label class="text-xs font-semibold text-gray-400 mb-1 block">메모</label>
             <input v-model="draft.memo" class="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:border-gray-400 bg-white" placeholder="선택사항" />
           </div>
+        </div>
+
+        <!-- 저장 버튼 -->
+        <div class="flex gap-2.5 mt-5">
+          <AppButton variant="secondary" @click="$emit('close')">취소</AppButton>
+          <AppButton @click="handleSave">저장하기</AppButton>
         </div>
 
       </div>
