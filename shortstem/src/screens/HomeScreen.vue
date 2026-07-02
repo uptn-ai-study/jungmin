@@ -52,7 +52,7 @@
         </div>
         <div v-if="allRecentVideos.length === 0" class="px-5 pb-5 flex flex-col items-center gap-1.5">
           <span class="text-3xl">🎬</span>
-          <p class="text-sm font-medium text-gray-400">영상을 분석해서 정리해보세요</p>
+          <p class="text-sm font-medium text-gray-400">아직 분석한 영상이 없어요</p>
         </div>
         <div v-else class="overflow-x-auto no-scrollbar pb-4" style="scroll-snap-type: x mandatory;">
           <div class="flex gap-3 pr-5">
