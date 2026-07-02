@@ -34,7 +34,7 @@
       <!-- URL 입력 헤더 -->
       <div class="bg-paper px-5 pt-10 pb-5 border-b border-gray-100 flex-shrink-0">
         <div class="mb-5">
-          <h1 class="text-2xl font-black text-gray-900 tracking-tight">픽템</h1>
+          <h1 class="text-2xl font-black text-gray-900 tracking-tight">유튜브픽템</h1>
           <p class="text-sm font-medium text-gray-500 mt-1">유튜브 링크를 넣으면 영상 속 템들을 AI가 정리해줘요.</p>
         </div>
         <UrlInputBox :loading="analyzing" @analyze="$emit('analyze', $event)" />
