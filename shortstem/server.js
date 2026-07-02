@@ -55,6 +55,50 @@ async function fetchCaptions(videoId) {
   }
 }
 
+async function fetchNaverPrice(productName) {
+  try {
+    const res = await fetch(
+      `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(productName)}&display=3&sort=sim`,
+      {
+        headers: {
+          'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID.trim(),
+          'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET.trim(),
+        },
+        signal: AbortSignal.timeout(3000),
+      }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    const items = data.items
+    if (!items?.length) return null
+    const prices = items.map(i => parseInt(i.lprice)).filter(p => p > 0).sort((a, b) => a - b)
+    if (!prices.length) return null
+    const mid = Math.floor(prices.length / 2)
+    return prices.length % 2 !== 0 ? prices[mid] : Math.round((prices[mid - 1] + prices[mid]) / 2)
+  } catch {
+    return null
+  }
+}
+
+async function enrichEstimatedPrices(products) {
+  const targets = products.filter(p => p.priceSource === 'estimated')
+  if (targets.length === 0) return products
+
+  await Promise.all(
+    targets.map(async p => {
+      const query = (p.seller && p.seller !== '미확인')
+        ? `${p.seller} ${p.name}`
+        : p.name
+      const naverPrice = await fetchNaverPrice(query)
+      if (naverPrice) {
+        p.price = naverPrice
+        p.priceSource = 'naver'
+      }
+    })
+  )
+  return products
+}
+
 async function fetchCommentPrices(videoId) {
   try {
     const res = await fetch(
@@ -84,7 +128,7 @@ function buildProductPrompt(title, channelTitle, extraContext) {
 예: 뷰티 영상인데 전자제품이 나오거나, 다이소 영상인데 명품 브랜드 상품이 나오면 제외.
 
 각 상품에 대해 아래 필드를 포함한 JSON 배열로 반환해줘:
-- name: 실제 상품명만. 영상 제목·채널명·해시태그 전체 문구를 그대로 쓰지 마.
+- name: 실제 상품명만. 영상 제목·채널명·해시태그 전체 문구를 그대로 쓰지 마. IKEA(이케아) 제품은 반드시 "한글명(원문명)" 형식으로 표기해. 예: 칼락스(KALLAX), 빌리(BILLY), 팍(PAX).
 - seller: 브랜드가 아닌 판매처(스토어). 위에서 파악한 판매처를 우선 사용. 모르면 "미확인".
 - category: 생활용품/뷰티/전자기기/식품/패션/기타 중 하나
 - itemCode: 다이소 상품 품번(#12345 또는 품번:12345 형식)이 있으면 문자열, 없으면 null
@@ -97,6 +141,7 @@ function buildProductPrompt(title, channelTitle, extraContext) {
   4순위: 브랜드+종류+카테고리로 시세 추정 → priceSource: "estimated"
   가격이 0이면 안 됨.
 - priceSource: "description" / "comment" / "known" / "estimated" 중 하나
+- description: 이 상품을 소개한 영상 설명·자막·영상 속 문장을 원문 그대로 인용. 인용할 문장이 없으면 null.
 
 상품 없으면 [] 반환. JSON 배열만, 마크다운 없이.
 
@@ -170,6 +215,7 @@ function mapProducts(rawProducts) {
     timestamp: p.timestamp || null,
     price: p.price || 0,
     priceSource: p.priceSource || 'estimated',
+    description: p.description || null,
     memo: '',
     checked: true
   }))
@@ -219,7 +265,8 @@ app.post('/api/analyze', async (req, res) => {
     )
 
     if (rawFromDesc.length > 0) {
-      return res.json({ video: videoInfo, products: mapProducts(rawFromDesc) })
+      const products = await enrichEstimatedPrices(mapProducts(rawFromDesc))
+      return res.json({ video: videoInfo, products })
     }
 
     // 2단계: description에 상품 없음 → 영상 길이 확인
@@ -232,10 +279,11 @@ app.post('/api/analyze', async (req, res) => {
     console.log(`[analyze] description에 상품 없음, 영상 직접 분석 시작 (${Math.round(durationSecs / 60)}분)`)
     const rawFromVideo = await analyzeVideoWithGemini(url, snippet.title, snippet.channelTitle)
 
+    const productsFromVideo = await enrichEstimatedPrices(mapProducts(rawFromVideo))
     return res.json({
       video: videoInfo,
-      products: mapProducts(rawFromVideo),
-      noProductsReason: rawFromVideo.length === 0 ? 'not_found' : undefined
+      products: productsFromVideo,
+      noProductsReason: productsFromVideo.length === 0 ? 'not_found' : undefined
     })
 
   } catch (err) {

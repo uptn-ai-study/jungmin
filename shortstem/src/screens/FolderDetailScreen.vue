@@ -30,11 +30,6 @@
         </div>
       </div>
 
-      <button
-        v-if="items.length"
-        class="text-xs font-semibold text-gray-300"
-        @click="startConfirm"
-      >전체 삭제</button>
     </div>
 
     <!-- 전체 삭제 확인 팝업 -->
@@ -54,8 +49,32 @@
       </div>
     </Transition>
 
+    <!-- 개별 삭제 확인 팝업 -->
+    <Transition name="fade">
+      <div
+        v-if="deleteTargetId"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      >
+        <div class="bg-white rounded-2xl shadow-paper-lg px-6 py-6 mx-8 w-full max-w-[320px]">
+          <p class="font-black text-gray-900 text-base text-center mb-5">상품을 삭제하시겠어요?</p>
+          <div class="flex gap-2">
+            <AppButton variant="secondary" @click="deleteTargetId = null">취소</AppButton>
+            <AppButton variant="danger" @click="confirmDelete">삭제</AppButton>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- 아이템 목록 -->
     <div class="px-5 pt-5 flex flex-col gap-3">
+      <!-- 전체 삭제 -->
+      <div v-if="sortedItems.length" class="flex justify-end">
+        <button
+          class="text-xs font-semibold text-gray-400"
+          @click="startConfirm"
+        >전체 삭제</button>
+      </div>
+
       <template v-if="sortedItems.length">
         <div v-for="p in sortedItems" :key="p.id" class="relative">
           <ItemStickerCard
@@ -67,15 +86,17 @@
             :price-source="p.priceSource"
             :priority="p.priority"
             :memo="p.memo"
+            :description="p.description"
             :source-title="p.videoTitle"
             :source-url="p.videoUrl"
+            :purchase-url="p.purchaseUrl"
             :rotate="0"
             @update-price="(price) => $emit('updatePrice', p.id, price)"
             @click="$emit('openProduct', p)"
           />
           <button
-            class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-white shadow-paper flex items-center justify-center text-[10px] text-gray-200 z-10"
-            @click.stop="$emit('deleteProduct', p.id)"
+            class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] z-10"
+            @click.stop="deleteTargetId = p.id"
           >✕</button>
         </div>
       </template>
@@ -145,6 +166,14 @@ const sortedItems = computed(() => {
   if (sortKey.value === 'price_desc') return list.sort((a, b) => b.price - a.price)
   return list.sort((a, b) => b.savedAt.localeCompare(a.savedAt))
 })
+
+// 개별 삭제 확인
+const deleteTargetId = ref<string | null>(null)
+
+function confirmDelete() {
+  if (deleteTargetId.value) emit('deleteProduct', deleteTargetId.value)
+  deleteTargetId.value = null
+}
 
 // 전체 삭제 확인
 const confirmMode = ref(false)

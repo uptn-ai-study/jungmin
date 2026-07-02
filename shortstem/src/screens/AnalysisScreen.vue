@@ -67,24 +67,28 @@
           <div
             v-for="p in products"
             :key="p.id"
-            class="bg-paper rounded-2xl p-4 shadow-paper flex items-start gap-3 cursor-pointer"
-            @click="toggleSelect(p.id)"
+            class="bg-paper rounded-2xl p-4 shadow-paper flex items-start gap-3 select-none"
           >
             <!-- 체크박스 -->
             <div
-              class="w-6 h-6 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors"
-              :class="selected.has(p.id) ? 'bg-gray-900 border-gray-900' : 'border-gray-300'"
+              class="w-5 h-5 rounded-full border-2 flex-shrink-0 self-start mt-0.5 flex items-center justify-center transition-colors cursor-pointer"
+              :class="selected.has(p.id) ? 'bg-baby-pink-dark border-baby-pink-dark' : 'border-gray-300'"
+              @click="toggleSelect(p.id)"
             >
-              <span v-if="selected.has(p.id)" class="text-white text-xs font-bold">✓</span>
+              <span v-if="selected.has(p.id)" class="text-white text-[10px] font-bold">✓</span>
             </div>
 
             <div class="flex-1 min-w-0">
-              <div v-if="p.timestamp" class="mb-1">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-900 text-white text-[11px] font-bold">
-                  ▶ {{ p.timestamp }}
-                </span>
+              <div class="flex items-start justify-between gap-2">
+                <div class="text-sm font-black text-gray-900">{{ p.name }}</div>
+                <a
+                  v-if="p.timestamp"
+                  :href="timestampUrl(result!.video.url, p.timestamp)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-900 text-white text-[11px] font-bold flex-shrink-0"
+                >▶ {{ p.timestamp }}</a>
               </div>
-              <div class="text-sm font-black text-gray-900">{{ p.name }}</div>
               <div class="text-xs font-medium text-gray-400 mt-0.5">
                 {{ p.seller }}
                 <span v-if="p.itemCode && p.seller === '다이소'"> · #{{ p.itemCode }}</span>
@@ -92,6 +96,29 @@
               <div class="mt-1.5 flex items-center gap-2">
                 <span class="text-sm font-black text-gray-900">₩{{ p.price.toLocaleString() }}</span>
                 <span v-if="p.priceSource === 'estimated' || p.priceSource === 'known'" class="text-[11px] font-medium text-gray-400">AI추정</span>
+                <a
+                  v-if="p.purchaseUrl"
+                  :href="p.purchaseUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-base leading-none"
+                  @click.stop
+                >🔗</a>
+              </div>
+
+              <button
+                v-if="p.description"
+                class="mt-2 flex items-center gap-1 text-[11px] font-semibold text-gray-400"
+                @click.stop="toggleExpand(p.id)"
+              >
+                <span>🪄 설명</span>
+                <span class="transition-transform duration-200 text-[9px]" :class="expanded.has(p.id) ? 'rotate-180' : ''">▼</span>
+              </button>
+              <div
+                v-if="p.description && expanded.has(p.id)"
+                class="mt-1.5 bg-gray-50 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 leading-relaxed"
+              >
+                {{ p.description }}
               </div>
             </div>
           </div>
@@ -126,6 +153,7 @@ const emit = defineEmits<{
 
 const products = ref<Product[]>([])
 const selected = ref<Set<string>>(new Set())
+const expanded = ref<Set<string>>(new Set())
 
 watch(() => props.result, (v) => {
   if (v) {
@@ -137,10 +165,23 @@ watch(() => props.result, (v) => {
 const noProductsReason = computed(() => props.result?.noProductsReason)
 const allSelected = computed(() => products.value.length > 0 && products.value.every(p => selected.value.has(p.id)))
 
+function timestampUrl(videoUrl: string, timestamp: string) {
+  const [m, s] = timestamp.split(':').map(Number)
+  const secs = (m || 0) * 60 + (s || 0)
+  const videoId = videoUrl.match(/(?:v=|youtu\.be\/)([^&?/]+)/)?.[1]
+  return videoId ? `https://www.youtube.com/watch?v=${videoId}&t=${secs}s` : videoUrl
+}
+
 function toggleSelect(id: string) {
   const s = new Set(selected.value)
   s.has(id) ? s.delete(id) : s.add(id)
   selected.value = s
+}
+
+function toggleExpand(id: string) {
+  const s = new Set(expanded.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  expanded.value = s
 }
 
 function toggleAll() {

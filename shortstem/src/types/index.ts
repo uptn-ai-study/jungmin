@@ -1,5 +1,5 @@
 export type Category = '뷰티' | '전자기기' | '생활용품' | '식품' | '패션' | '기타'
-export type PriceSource = 'description' | 'comment' | 'known' | 'estimated' | 'user'
+export type PriceSource = 'description' | 'comment' | 'known' | 'estimated' | 'naver' | 'user'
 export type Priority = 'high' | 'medium' | 'low'
 
 export interface Product {
@@ -17,6 +17,7 @@ export interface Product {
   videoThumbnail?: string
   purchaseUrl?: string | null
   timestamp?: string | null
+  description?: string | null
   savedAt: string
 }
 

@@ -1,5 +1,38 @@
 <template>
   <div class="flex flex-col pb-8">
+    <!-- 전체 삭제 확인 팝업 -->
+    <Transition name="fade">
+      <div
+        v-if="confirmAllMode"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      >
+        <div class="bg-white rounded-2xl shadow-paper-lg px-6 py-6 mx-8 w-full max-w-[320px]">
+          <p class="font-black text-gray-900 text-base text-center mb-1">전체 삭제할까요?</p>
+          <p class="text-sm text-gray-400 text-center mb-5">이 영상의 {{ products.length }}개 항목이<br>모두 삭제돼요.</p>
+          <div class="flex gap-2">
+            <AppButton variant="secondary" @click="confirmAllMode = false">취소</AppButton>
+            <AppButton variant="danger" @click="doDeleteAll">삭제</AppButton>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- 개별 삭제 확인 팝업 -->
+    <Transition name="fade">
+      <div
+        v-if="deleteTargetId"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      >
+        <div class="bg-white rounded-2xl shadow-paper-lg px-6 py-6 mx-8 w-full max-w-[320px]">
+          <p class="font-black text-gray-900 text-base text-center mb-5">상품을 삭제하시겠어요?</p>
+          <div class="flex gap-2">
+            <button class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 text-sm font-bold" @click="deleteTargetId = null">취소</button>
+            <button class="flex-1 py-3 rounded-xl bg-red-500 text-white text-sm font-bold" @click="confirmDelete">삭제</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- 토스트 -->
     <Transition name="toast">
       <div
@@ -34,17 +67,23 @@
 
     <!-- 제품 목록 -->
     <div class="px-5 pt-3 flex flex-col gap-4">
-      <div v-for="p in sortedProducts" :key="p.id" class="bg-paper rounded-2xl shadow-paper overflow-hidden">
-        <!-- 타임스탬프 뱃지 (우측 정렬) -->
-        <div v-if="p.timestamp" class="flex justify-end px-4 pt-3">
-          <button
-            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gray-900 text-white text-[11px] font-bold"
-            @click.stop="openUrl(timestampUrl(p))"
-          >▶ {{ p.timestamp }}</button>
-        </div>
+      <!-- 전체 삭제 -->
+      <div v-if="sortedProducts.length" class="flex justify-end">
+        <button
+          class="text-xs font-semibold text-gray-400"
+          @click="confirmAllMode = true"
+        >전체 삭제</button>
+      </div>
 
-        <!-- 상품 카드 (그림자/배경 제거, 모듈에 통합) -->
-        <div @click="$emit('openProduct', p)">
+      <div v-for="p in sortedProducts" :key="p.id" class="relative">
+        <!-- 삭제 버튼 -->
+        <button
+          class="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 text-[10px] z-10"
+          @click.stop="deleteTargetId = p.id"
+        >✕</button>
+
+        <div class="bg-paper rounded-2xl shadow-paper overflow-hidden">
+          <!-- 상품 카드 -->
           <ItemStickerCard
             :item-name="p.name"
             :seller="p.seller"
@@ -54,25 +93,18 @@
             :price-source="p.priceSource"
             :priority="p.priority"
             :memo="p.memo"
+            :description="p.description"
             :source-title="p.videoTitle"
             :source-url="p.videoUrl"
+            :purchase-url="p.purchaseUrl"
+            :timestamp="p.timestamp"
             :rotate="0"
             :flat="true"
             @update-price="(price) => $emit('updatePrice', p.id, price)"
+            @open-timestamp="openUrl(timestampUrl(p))"
+            @click="$emit('openProduct', p)"
           />
-        </div>
 
-        <!-- 하단 버튼 -->
-        <div class="flex gap-2 px-4 pb-4 pt-1">
-          <button
-            class="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-500 text-xs font-bold active:scale-95 transition-transform"
-            @click.stop="$emit('deleteProduct', p.id)"
-          >삭제하기</button>
-          <button
-            v-if="p.purchaseUrl"
-            class="flex-1 py-2.5 rounded-xl bg-baby-pink-light text-baby-pink-dark text-xs font-bold active:scale-95 transition-transform"
-            @click.stop="openUrl(p.purchaseUrl)"
-          >구매하러 가기</button>
         </div>
       </div>
 
@@ -88,6 +120,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import ItemStickerCard from '../components/ItemStickerCard.vue'
+import AppButton from '../components/AppButton.vue'
 import type { Product } from '../types'
 
 const props = defineProps<{
@@ -95,12 +128,25 @@ const props = defineProps<{
   products: Product[]
 }>()
 
-defineEmits<{
+const deleteTargetId = ref<string | null>(null)
+
+const emit = defineEmits<{
   back: []
   deleteProduct: [id: string]
+  deleteAllProducts: []
   updatePrice: [id: string, price: number]
   openProduct: [product: Product]
 }>()
+
+function confirmDelete() {
+  if (deleteTargetId.value) emit('deleteProduct', deleteTargetId.value)
+  deleteTargetId.value = null
+}
+
+function doDeleteAll() {
+  confirmAllMode.value = false
+  emit('deleteAllProducts')
+}
 
 const toastMsg = ref<string | null>(null)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -153,4 +199,6 @@ function timestampUrl(p: Product): string {
 <style scoped>
 .toast-enter-active, .toast-leave-active { transition: opacity 0.2s; }
 .toast-enter-from, .toast-leave-to { opacity: 0; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
