@@ -34,7 +34,7 @@
       <!-- URL 입력 헤더 -->
       <div class="bg-paper px-5 pt-10 pb-5 border-b border-gray-100 flex-shrink-0">
         <div class="mb-5">
-          <h1 class="text-2xl font-title font-bold text-gray-900 tracking-tight">추천템모아</h1>
+          <h1 class="text-2xl font-title font-bold text-gray-900 tracking-tight">유튜브 추천템 저장소</h1>
           <p class="text-sm font-medium text-gray-500 mt-1">유튜브 영상 속 추천템들을 AI가 분석해서 보여줘요</p>
         </div>
         <UrlInputBox :loading="analyzing" @analyze="$emit('analyze', $event)" />

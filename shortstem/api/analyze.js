@@ -112,7 +112,7 @@ async function fetchCommentPrices(videoId) {
 function buildProductPrompt(title, channelTitle, extraContext) {
   return `
 【판매처 우선 판단】
-영상 제목, 해시태그, 채널명에서 판매처(스토어명)를 먼저 파악해. 예: "다이소", "올리브영", "무신사" 등이 포함되면 해당 영상의 모든 제품 판매처는 그 스토어야.
+영상 제목, 해시태그, 채널명에서 판매처(스토어명)를 먼저 파악해. 예: "다이소", "올리브영", "무신사", "오늘의집", "이케아", "29cm" 등이 포함되면 해당 영상의 모든 제품 판매처는 그 스토어야.
 
 【관련성 필터】
 영상 제목: "${title}" / 채널명: "${channelTitle}"
